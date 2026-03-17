@@ -5,7 +5,7 @@
 This repository contains my submission for the RA coding test. It includes two tasks:
 
 - **Task 1:** Construct a U.S. county–year panel dataset using BEA and BLS data
-- **Task 2:** Download, clean, harmonize, and construct IRS SOI county–year and ZIP–year panel datasets
+- **Task 2:** Download, clean, harmonize, and construct an IRS SOI county–year panel dataset
 
 ---
 
@@ -19,6 +19,7 @@ RA_Coding_Test/
 ├── output/
 │   ├── bea_county_panel.csv
 │   ├── bls_county_panel.csv
+│   ├── county_year_panel.csv
 │   └── soi_county_panel_1989_2022.csv
 ├── docs/
 │   ├── task1_data_summary.md
