@@ -1,52 +1,34 @@
-# Task 1: U.S. County-Year Panel Dataset
+# RA Coding Test
 
-Author: Yuxin Shen
+**Author:** Yuxin Shen
 
-This repository contains the code and output for Task 1 of the coding test. The goal of this task is to construct a U.S. county-year panel dataset with consistent county identifiers and the following variables:
+This repository contains my submission for the RA coding test. It includes two tasks:
 
-- State name
-- County name
-- State FIPS code
-- County FIPS code
-- Unemployment rate
-- Income
-- Population
-- Income per capita
+- **Task 1:** Construct a U.S. county–year panel dataset using BEA and BLS data
+- **Task 2:** Download, clean, harmonize, and construct IRS SOI county–year and ZIP–year panel datasets
 
-## Data sources
+---
 
-### 1. BEA
-Source: BEA CAINC1, County Personal Income Summary
-
-Variables used:
-- Personal income
-- Population
-- Per capita personal income
-
-Coverage used in this project:
-- 1969 to 2024
-
-### 2. BLS
-Source: BLS Local Area Unemployment Statistics (LAUS), county annual averages
-
-Variable used:
-- Unemployment rate
-
-Coverage used in this project:
-- 1990 to 2024
-
-## Folder structure
+## Repository Structure
 
 ```text
 RA_Coding_Test/
 ├── raw_data/
 │   ├── bea/
-│   └── bls/
+│   ├── bls/
+│   └── soi/
+│       ├── county/
+│       └── zip/
 ├── code/
-│   └── Task_1_Yuxin_S.Rmd
+│   ├── Task_1_Yuxin_S.Rmd
+│   └── Task_2_Yuxin_S.Rmd
 ├── output/
-│   ├── bea_county_panel.csv
-│   ├── bls_county_panel.csv
-│   └── county_year_panel.csv
+│   ├── task1_bea_county_panel.csv
+│   ├── task1_bls_county_panel.csv
+│   ├── task1_county_year_panel.csv
+│   ├── task2_soi_county_year_panel.csv
+│   └── task2_soi_zip_year_panel.csv
 ├── docs/
+│   ├── task1_data_summary.md
+│   └── task2_data_summary.md
 └── README.md
