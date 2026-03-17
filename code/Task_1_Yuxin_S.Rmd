@@ -1,0 +1,445 @@
+---
+title: "Code Task_1"
+author: "Yuxin Shen"
+date: "2026-03-16"
+output: html_document
+---
+```{r}
+install.packages(c("tidyverse", "readxl", "janitor", "stringr"))
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(stringr)
+```
+
+```{r}
+bea_files <- list.files("raw_data/bea", full.names = TRUE)
+bea_files
+```
+```{r}
+library(tidyverse)
+library(janitor)
+library(stringr)
+
+bea_file <- "raw_data/bea/CAINC1__ALL_AREAS_1969_2024.csv"
+
+bea_raw <- read_csv(bea_file, show_col_types = FALSE)
+
+names(bea_raw)
+
+bea_raw <- bea_raw %>% clean_names()
+
+names(bea_raw)
+
+# keep what we needed
+bea_sub <- bea_raw %>%
+  filter(line_code %in% c(1, 2, 3))
+
+# change to longtable
+bea_long <- bea_sub %>%
+  pivot_longer(
+    cols = matches("^x\\d{4}$"),
+    names_to = "year",
+    values_to = "value"
+  ) %>%
+  mutate(
+    year = as.integer(str_remove(year, "^x")),
+    value = as.numeric(value)
+  )
+
+# change line_code
+bea_long <- bea_long %>%
+  mutate(
+    variable = case_when(
+      line_code == 1 ~ "income",
+      line_code == 2 ~ "population",
+      line_code == 3 ~ "income_per_capita",
+      TRUE ~ NA_character_
+    )
+  )
+
+bea_panel <- bea_long %>%
+  select(geo_fips, geo_name, year, variable, value) %>%
+  pivot_wider(
+    names_from = variable,
+    values_from = value
+  )
+
+glimpse(bea_panel)
+head(bea_panel)
+bea_panel %>%
+  distinct(geo_fips, geo_name) %>%
+  slice(1:30)
+```
+
+```{r}
+## BEA part:
+bea_county <- bea_panel %>%
+  mutate(
+    geo_fips = str_trim(geo_fips),
+    state_fips = str_sub(geo_fips, 1, 2),
+    county_fips = str_sub(geo_fips, 3, 5)
+  ) %>%
+  filter(
+    nchar(geo_fips) == 5,
+    geo_fips != "00000",
+    county_fips != "000"
+  )
+
+
+state_lookup <- tribble(
+  ~state_fips, ~state_name,
+  "01", "Alabama",
+  "02", "Alaska",
+  "04", "Arizona",
+  "05", "Arkansas",
+  "06", "California",
+  "08", "Colorado",
+  "09", "Connecticut",
+  "10", "Delaware",
+  "11", "District of Columbia",
+  "12", "Florida",
+  "13", "Georgia",
+  "15", "Hawaii",
+  "16", "Idaho",
+  "17", "Illinois",
+  "18", "Indiana",
+  "19", "Iowa",
+  "20", "Kansas",
+  "21", "Kentucky",
+  "22", "Louisiana",
+  "23", "Maine",
+  "24", "Maryland",
+  "25", "Massachusetts",
+  "26", "Michigan",
+  "27", "Minnesota",
+  "28", "Mississippi",
+  "29", "Missouri",
+  "30", "Montana",
+  "31", "Nebraska",
+  "32", "Nevada",
+  "33", "New Hampshire",
+  "34", "New Jersey",
+  "35", "New Mexico",
+  "36", "New York",
+  "37", "North Carolina",
+  "38", "North Dakota",
+  "39", "Ohio",
+  "40", "Oklahoma",
+  "41", "Oregon",
+  "42", "Pennsylvania",
+  "44", "Rhode Island",
+  "45", "South Carolina",
+  "46", "South Dakota",
+  "47", "Tennessee",
+  "48", "Texas",
+  "49", "Utah",
+  "50", "Vermont",
+  "51", "Virginia",
+  "53", "Washington",
+  "54", "West Virginia",
+  "55", "Wisconsin",
+  "56", "Wyoming"
+)
+
+bea_county <- bea_county %>%
+  mutate(
+    county_name = str_trim(word(geo_name, 1, sep = fixed(",")))
+  ) %>%
+  left_join(state_lookup, by = "state_fips")
+
+
+bea_clean <- bea_county %>%
+  select(
+    state_name,
+    county_name,
+    state_fips,
+    county_fips,
+    year,
+    income,
+    population,
+    income_per_capita
+  ) %>%
+  arrange(state_fips, county_fips, year)
+
+print(head(bea_clean, 10))
+
+dup_check <- bea_clean %>%
+  count(state_fips, county_fips, year) %>%
+  filter(n > 1)
+
+print(dup_check)
+
+year_check <- bea_clean %>%
+  summarise(
+    min_year = min(year, na.rm = TRUE),
+    max_year = max(year, na.rm = TRUE)
+  )
+
+print(year_check)
+
+n_counties <- bea_clean %>%
+  distinct(state_fips, county_fips) %>%
+  nrow()
+
+print(n_counties)
+
+write_csv(bea_clean, "output/bea_county_panel.csv")
+```
+
+```{r}
+
+bls_files <- list.files(
+  "raw_data/bls",
+  full.names = TRUE
+) %>%
+  discard(~ str_detect(basename(.x), "^~\\$")) %>%
+  keep(~ str_detect(basename(.x), "^laucnty\\d{2}\\.xlsx$|^laucnty\\d{2}\\.xls$"))
+
+print(bls_files)
+
+
+clean_bls_file <- function(file_path) {
+  
+  df_raw <- read_excel(file_path, col_names = FALSE)
+  
+  # row 2 contains the actual headers
+  new_names <- df_raw %>%
+    slice(2) %>%
+    unlist(use.names = FALSE) %>%
+    as.character()
+  
+  df <- df_raw %>%
+    slice(-(1:2))
+  
+  names(df) <- make.names(new_names, unique = TRUE)
+  df <- df %>% clean_names()
+  
+  # extract year from the file name
+  yy <- str_extract(basename(file_path), "\\d{2}") %>% as.integer()
+  file_year <- if_else(yy <= 24, 2000L + yy, 1900L + yy)
+  
+  df <- df %>%
+    mutate(
+      state_fips_code = str_pad(as.character(state_fips_code), 2, pad = "0"),
+      county_fips_code = str_pad(as.character(county_fips_code), 3, pad = "0"),
+      year = as.integer(year),
+      labor_force = parse_number(as.character(labor_force)),
+      employed = parse_number(as.character(employed)),
+      unemployed = parse_number(as.character(unemployed)),
+      unemployment_rate = parse_number(as.character(unemployment_rate)),
+      year_from_file = file_year
+    ) %>%
+    filter(
+      !is.na(state_fips_code),
+      !is.na(county_fips_code)
+    )
+  
+  return(df)
+}
+
+
+bls_all <- map_dfr(bls_files, clean_bls_file)
+
+# quick check: reported year should match file year
+year_match_check <- bls_all %>%
+  summarise(all_match = all(year == year_from_file, na.rm = TRUE))
+
+print(year_match_check)
+
+
+state_lookup <- tribble(
+  ~state_fips, ~state_name,
+  "01", "Alabama",
+  "02", "Alaska",
+  "04", "Arizona",
+  "05", "Arkansas",
+  "06", "California",
+  "08", "Colorado",
+  "09", "Connecticut",
+  "10", "Delaware",
+  "11", "District of Columbia",
+  "12", "Florida",
+  "13", "Georgia",
+  "15", "Hawaii",
+  "16", "Idaho",
+  "17", "Illinois",
+  "18", "Indiana",
+  "19", "Iowa",
+  "20", "Kansas",
+  "21", "Kentucky",
+  "22", "Louisiana",
+  "23", "Maine",
+  "24", "Maryland",
+  "25", "Massachusetts",
+  "26", "Michigan",
+  "27", "Minnesota",
+  "28", "Mississippi",
+  "29", "Missouri",
+  "30", "Montana",
+  "31", "Nebraska",
+  "32", "Nevada",
+  "33", "New Hampshire",
+  "34", "New Jersey",
+  "35", "New Mexico",
+  "36", "New York",
+  "37", "North Carolina",
+  "38", "North Dakota",
+  "39", "Ohio",
+  "40", "Oklahoma",
+  "41", "Oregon",
+  "42", "Pennsylvania",
+  "44", "Rhode Island",
+  "45", "South Carolina",
+  "46", "South Dakota",
+  "47", "Tennessee",
+  "48", "Texas",
+  "49", "Utah",
+  "50", "Vermont",
+  "51", "Virginia",
+  "53", "Washington",
+  "54", "West Virginia",
+  "55", "Wisconsin",
+  "56", "Wyoming"
+)
+
+# ---------------------------------------------------------
+# Standardize county names
+# Use FIPS as the actual merge key; names are labels only
+# ---------------------------------------------------------
+
+clean_county_name <- function(x) {
+  x %>%
+    str_remove(",\\s*[A-Z]{2}$") %>%
+    str_remove("\\s+County$") %>%
+    str_remove("\\s+Parish$") %>%
+    str_remove("\\s+Borough$") %>%
+    str_remove("\\s+Census Area$") %>%
+    str_remove("\\s+Municipality$") %>%
+    str_remove("\\s+City and Borough$") %>%
+    str_remove("\\s+city and borough$") %>%
+    str_trim()
+}
+
+
+bls_clean <- bls_all %>%
+  transmute(
+    state_fips = state_fips_code,
+    county_fips = county_fips_code,
+    county_name = clean_county_name(county_name_state_abbreviation),
+    year = year,
+    unemployment_rate = unemployment_rate
+  ) %>%
+  filter(
+    county_fips != "000"
+  ) %>%
+  mutate(
+    county_name = str_trim(county_name)
+  ) %>%
+  left_join(state_lookup, by = "state_fips") %>%
+  select(
+    state_name,
+    county_name,
+    state_fips,
+    county_fips,
+    year,
+    unemployment_rate
+  ) %>%
+  arrange(state_fips, county_fips, year)
+
+# ---------------------------------------------------------
+# Checks
+# ---------------------------------------------------------
+
+print(head(bls_clean, 10))
+
+dup_check_bls <- bls_clean %>%
+  count(state_fips, county_fips, year) %>%
+  filter(n > 1)
+
+print(dup_check_bls)
+
+year_check_bls <- bls_clean %>%
+  summarise(
+    min_year = min(year, na.rm = TRUE),
+    max_year = max(year, na.rm = TRUE)
+  )
+
+print(year_check_bls)
+
+n_counties_bls <- bls_clean %>%
+  distinct(state_fips, county_fips) %>%
+  nrow()
+
+print(n_counties_bls)
+
+write_csv(bls_clean, "output/bls_county_panel.csv")
+  
+```
+```{r}
+##Build_panel.R
+library(tidyverse)
+
+bea_clean <- read_csv("output/bea_county_panel.csv", show_col_types = FALSE)
+bls_clean <- read_csv("output/bls_county_panel.csv", show_col_types = FALSE)
+
+final_panel <- bea_clean %>%
+  full_join(
+    bls_clean,
+    by = c("state_fips", "county_fips", "year"),
+    suffix = c("_bea", "_bls")
+  ) %>%
+  mutate(
+    state_name = coalesce(state_name_bea, state_name_bls),
+    county_name = coalesce(county_name_bea, county_name_bls)
+  ) %>%
+  select(
+    state_name,
+    county_name,
+    state_fips,
+    county_fips,
+    year,
+    unemployment_rate,
+    income,
+    population,
+    income_per_capita
+  ) %>%
+  arrange(state_fips, county_fips, year)
+
+print(head(final_panel, 10))
+
+dup_check_final <- final_panel %>%
+  count(state_fips, county_fips, year) %>%
+  filter(n > 1)
+
+print(dup_check_final)
+
+year_check_final <- final_panel %>%
+  summarise(
+    min_year = min(year, na.rm = TRUE),
+    max_year = max(year, na.rm = TRUE)
+  )
+
+print(year_check_final)
+
+n_counties_final <- final_panel %>%
+  distinct(state_fips, county_fips) %>%
+  nrow()
+
+print(n_counties_final)
+
+missing_pre1990_check <- final_panel %>%
+  filter(year < 1990) %>%
+  summarise(
+    all_unemp_missing = all(is.na(unemployment_rate))
+  )
+
+print(missing_pre1990_check)
+
+write_csv(final_panel, "output/county_year_panel.csv")
+```
+
+

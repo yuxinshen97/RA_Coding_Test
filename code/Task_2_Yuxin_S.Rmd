@@ -1,0 +1,802 @@
+---
+title: "Task_2_Yuxin_S"
+author: "Yuxin Shen"
+date: "2026-03-17"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+#firstly I try to combine 2010 and 2011
+county_2010 <- read_csv("raw_data/soi/county/10incyallagi.csv", show_col_types = FALSE)
+county_2011 <- read_csv("raw_data/soi/county/11incyallagi.csv", show_col_types = FALSE)
+
+names(county_2010)
+names(county_2011)
+
+dim(county_2010)
+dim(county_2011)
+
+county_2010 <- county_2010 %>%
+  mutate(year = 2010)
+
+county_2011 <- county_2011 %>%
+  mutate(year = 2011)
+
+county_panel_test <- bind_rows(county_2010, county_2011)
+
+dim(county_panel_test)
+
+county_panel_test %>% 
+  select(year, STATEFIPS, STATE, COUNTYFIPS, COUNTYNAME, agi_stub, N1) %>% 
+  head(10)
+
+county_panel_test %>% 
+  count(year)
+
+names(county_panel_test) <- tolower(names(county_panel_test))
+
+names(county_panel_test)[1:10]
+```
+```{r}
+# Construct a function for this clean process
+library(tidyverse)
+library(stringr)
+
+clean_county_soi <- function(file, year) {
+  df <- read_csv(file, show_col_types = FALSE)
+
+  names(df) <- tolower(names(df))
+
+  df <- df %>%
+    rename(
+      state_fips = statefips,
+      county_fips = countyfips,
+      county_name = countyname
+    ) %>%
+    mutate(
+      year = year,
+      state_fips = str_pad(state_fips, width = 2, side = "left", pad = "0"),
+      county_fips = str_pad(county_fips, width = 3, side = "left", pad = "0")
+    )
+
+  return(df)
+}
+
+# test this function
+county_2010_clean <- clean_county_soi("raw_data/soi/county/10incyallagi.csv", 2010)
+county_2011_clean <- clean_county_soi("raw_data/soi/county/11incyallagi.csv", 2011)
+
+county_panel_test2 <- bind_rows(county_2010_clean, county_2011_clean)
+
+county_panel_test2 %>%
+  count(year)
+
+county_panel_test2 %>%
+  select(year, state_fips, state, county_fips, county_name, agi_stub, n1) %>%
+  head(10)
+
+```
+```{r}
+years_2010_2022 <- 2010:2022
+
+files_2010_2022 <- sprintf(
+  "raw_data/soi/county/%02dincyallagi.csv",
+  years_2010_2022 %% 100
+)
+
+county_panel_2010_2022 <- map2_dfr(
+  files_2010_2022,
+  years_2010_2022,
+  clean_county_soi
+)
+
+county_panel_2010_2022 %>% count(year)
+dim(county_panel_2010_2022)
+
+county_panel_2010_2022 %>%
+  select(year, state_fips, state, county_fips, county_name, agi_stub, n1) %>%
+  head(20)
+
+write_csv(
+  county_panel_2010_2022,
+  "output/soi_county_panel_2010_2022.csv"
+)
+
+```
+
+```{r}
+#clean the data before 2009
+ak_2009 <- read_excel(
+  "raw_data/soi/county/2009_states/2009 County Income/county income 2009 AK.xls",
+  skip = 7,
+  col_names = c(
+    "state_fips",
+    "county_fips",
+    "county_name",
+    "n1",
+    "n2",
+    "a00100",
+    "a00200",
+    "a00600",
+    "a00300"
+  )
+)
+
+head(ak_2009, 10)
+dim(ak_2009)
+names(ak_2009)
+
+# write a function for old data
+library(stringr)
+
+ak_2009 <- ak_2009 %>%
+  mutate(
+    state = "AK",
+    year = 2009,
+    state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+    county_fips = str_pad(as.character(county_fips), 3, pad = "0")
+  )
+
+ak_2009 %>%
+  select(year, state_fips, state, county_fips, county_name, n1, n2, a00100, a00200, a00600, a00300) %>%
+  head(10)
+```
+
+```{r}
+# Clean data for year 2009
+files_2009 <- list.files(
+  "raw_data/soi/county/2009_states/2009 County Income",
+  pattern = "\\.xls$",
+  full.names = TRUE
+)
+
+
+clean_county_soi_old <- function(file, year, state_abbr) {
+  df <- read_excel(
+    file,
+    skip = 7,
+    col_names = c(
+      "state_fips",
+      "county_fips",
+      "county_name",
+      "n1",
+      "n2",
+      "a00100",
+      "a00200",
+      "a00600",
+      "a00300"
+    )
+  )
+
+  df %>%
+    mutate(
+      state = state_abbr,
+      year = year,
+      state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+      county_fips = str_pad(as.character(county_fips), 3, pad = "0")
+    )
+}
+
+
+files_2009
+length(files_2009)
+
+county_2009_all <- map_dfr(files_2009, function(f) {
+  state_abbr <- str_extract(basename(f), "[A-Z]{2}(?=\\.xls$)")
+
+  clean_county_soi_old(
+    file = f,
+    year = 2009,
+    state_abbr = state_abbr
+  )
+})
+
+county_2009_all <- map_dfr(files_2009, function(f) {
+  state_abbr <- str_extract(basename(f), "[A-Z]{2}(?=\\.xls$)")
+
+  clean_county_soi_old(
+    file = f,
+    year = 2009,
+    state_abbr = state_abbr
+  )
+})
+
+length(files_2009)
+
+dim(county_2009_all)
+
+county_2009_all %>% count(state)
+
+county_2009_all %>%
+  select(year, state_fips, state, county_fips, county_name, n1, n2, a00100, a00200, a00600, a00300) %>%
+  head(20)
+
+```
+```{r}
+#combine 2009 with previous data panel
+
+common_vars <- c(
+  "year", "state_fips", "state", "county_fips", "county_name",
+  "n1", "n2", "a00100", "a00200", "a00600", "a00300"
+)
+
+county_2009_common <- county_2009_all %>%
+  select(all_of(common_vars))
+
+county_2010_2022_common <- county_panel_2010_2022 %>%
+  select(all_of(common_vars))
+
+county_panel_2009_2022 <- bind_rows(
+  county_2009_common,
+  county_2010_2022_common
+)
+
+county_panel_2009_2022 %>% count(year)
+dim(county_panel_2009_2022)
+
+county_panel_2009_2022 %>%
+  select(year, state_fips, state, county_fips, county_name, n1, n2, a00100, a00200, a00600, a00300) %>%
+  head(20)
+
+county_panel_2009_2022 %>% count(year)
+
+write_csv(
+  county_panel_2009_2022,
+  "output/soi_county_panel_2009_2022.csv"
+)
+```
+
+
+```{r}
+#clean data for year 2008
+files_2008 <- list.files(
+  "raw_data/soi/county/2008_states/2008 County income",
+  pattern = "\\.xls$",
+  full.names = TRUE
+)
+
+length(files_2008)
+
+county_2008_all <- map_dfr(files_2008, function(f) {
+  state_abbr <- str_extract(basename(f), "[A-Z]{2}(?=\\.xls$)")
+
+  clean_county_soi_old(
+    file = f,
+    year = 2008,
+    state_abbr = state_abbr
+  )
+})
+
+dim(county_2008_all)
+
+county_2008_all %>% count(state)
+
+county_2008_all %>%
+  select(year, state_fips, state, county_fips, county_name, n1, n2, a00100, a00200, a00600, a00300) %>%
+  head(20)
+
+county_2008_common <- county_2008_all %>%
+  select(all_of(common_vars))
+
+county_panel_2008_2022 <- bind_rows(
+  county_2008_common,
+  county_panel_2009_2022
+)
+
+county_panel_2008_2022 %>% count(year)
+dim(county_panel_2008_2022)
+
+write_csv(
+  county_panel_2008_2022,
+  "output/soi_county_panel_2008_2022.csv"
+)
+```
+
+```{r}
+# clean data for year 2007
+al_2007 <- read_excel(
+  "raw_data/soi/county/2007_states/2007 County income/Alabama07ci.xls",
+  skip = 7,
+  col_names = c(
+    "state_fips",
+    "county_fips",
+    "county_name",
+    "n1",
+    "n2",
+    "a00100",
+    "a00200",
+    "a00600",
+    "a00300"
+  )
+)
+
+names(al_2007)
+dim(al_2007)
+head(al_2007, 10)
+
+al_2007 <- al_2007 %>%
+  filter(state_fips != "CODES")
+
+dim(al_2007)
+
+al_2007 %>%
+  head(10)
+```
+```{r}
+# add state and year for data 2007
+al_2007 <- al_2007 %>%
+  mutate(
+    state = "AL",
+    year = 2007,
+    state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+    county_fips = str_pad(as.character(county_fips), 3, pad = "0")
+  )
+
+al_2007 %>%
+  select(year, state_fips, state, county_fips, county_name, n1, n2, a00100, a00200, a00600, a00300) %>%
+  head(10)
+```
+```{r}
+clean_county_soi_2007 <- function(file, year, state_abbr) {
+  df <- read_excel(
+    file,
+    skip = 7,
+    col_names = c(
+      "state_fips",
+      "county_fips",
+      "county_name",
+      "n1",
+      "n2",
+      "a00100",
+      "a00200",
+      "a00600",
+      "a00300"
+    ),
+    col_types = rep("text", 9)
+  )
+
+  df %>%
+    filter(state_fips != "CODES") %>%
+    mutate(
+      state = state_abbr,
+      year = year,
+      state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+      county_fips = str_pad(as.character(county_fips), 3, pad = "0"),
+      n1 = readr::parse_number(n1),
+      n2 = readr::parse_number(n2),
+      a00100 = readr::parse_number(a00100),
+      a00200 = readr::parse_number(a00200),
+      a00600 = readr::parse_number(a00600),
+      a00300 = readr::parse_number(a00300)
+    )
+}
+
+files_2007 <- list.files(
+  "raw_data/soi/county/2007_states/2007 County income",
+  pattern = "\\.xls$",
+  full.names = TRUE
+)
+
+length(files_2007)
+
+state_lookup <- c(
+  Alabama = "AL", Alaska = "AK", Arizona = "AZ", Arkansas = "AR",
+  California = "CA", Colorado = "CO", Connecticut = "CT", Delaware = "DE",
+  Florida = "FL", Georgia = "GA", Hawaii = "HI", Idaho = "ID",
+  Illinois = "IL", Indiana = "IN", Iowa = "IA", Kansas = "KS",
+  Kentucky = "KY", Louisiana = "LA", Maine = "ME", Maryland = "MD",
+  Massachusetts = "MA", Michigan = "MI", Minnesota = "MN", Mississippi = "MS",
+  Missouri = "MO", Montana = "MT", Nebraska = "NE", Nevada = "NV",
+  NewHampshire = "NH", NewJersey = "NJ", NewMexico = "NM", NewYork = "NY",
+  NorthCarolina = "NC", NorthDakota = "ND", Ohio = "OH", Oklahoma = "OK",
+  Oregon = "OR", Pennsylvania = "PA", RhodeIsland = "RI", SouthCarolina = "SC",
+  SouthDakota = "SD", Tennessee = "TN", Texas = "TX", Utah = "UT",
+  Vermont = "VT", Virginia = "VA", Washington = "WA", WestVirginia = "WV",
+  Wisconsin = "WI", Wyoming = "WY", DofC = "DC"
+)
+
+county_2007_all <- map_dfr(files_2007, function(f) {
+  state_name <- str_remove(basename(f), "07ci\\.xls$")
+  state_abbr <- unname(state_lookup[state_name])
+
+  clean_county_soi_2007(
+    file = f,
+    year = 2007,
+    state_abbr = state_abbr
+  )
+})
+
+dim(county_2007_all)
+county_2007_all %>% count(state)
+
+county_2007_all %>%
+  select(year, state_fips, state, county_fips, county_name, n1, n2, a00100, a00200, a00600, a00300) %>%
+  head(20)
+
+county_2007_common <- county_2007_all %>%
+  select(all_of(common_vars))
+
+county_panel_2007_2022 <- bind_rows(
+  county_2007_common,
+  county_panel_2008_2022
+)
+
+county_panel_2007_2022 %>% count(year)
+dim(county_panel_2007_2022)
+
+write_csv(
+  county_panel_2007_2022,
+  "output/soi_county_panel_2007_2022.csv"
+)
+```
+
+```{r}
+library(readxl)
+library(dplyr)
+library(stringr)
+library(janitor)
+library(purrr)
+library(tools)
+
+clean_soi_2006_file <- function(file_path) {
+  read_excel(file_path, skip = 7) %>%
+    clean_names() %>%
+    rename(
+      state_fips   = codes,
+      county_code  = x2,
+      county_name  = county,
+      n_returns    = returns,
+      n_exemptions = exemptions,
+      agi          = gross_income,
+      wages        = salaries
+    ) %>%
+    mutate(
+      state_fips   = str_pad(as.character(state_fips), 2, pad = "0"),
+      county_code  = str_pad(as.character(county_code), 3, pad = "0"),
+      county_fips  = paste0(state_fips, county_code),
+      county_name  = str_trim(as.character(county_name)),
+      county_name  = str_remove(county_name, " COUNTY$"),
+      n_returns    = as.numeric(gsub(",", "", n_returns)),
+      n_exemptions = as.numeric(gsub(",", "", n_exemptions)),
+      agi          = as.numeric(gsub(",", "", agi)),
+      wages        = as.numeric(gsub(",", "", wages)),
+      year         = 2006
+    ) %>%
+    filter(
+      !is.na(state_fips),
+      !is.na(county_code),
+      !is.na(county_name),
+      county_code != "000"
+    ) %>%
+    select(state_fips, county_code, county_fips, county_name,
+           year, n_returns, n_exemptions, agi, wages)
+}
+
+folder_2006 <- "C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/raw_data/soi/county/2006countyincome"
+
+files_2006 <- list.files(folder_2006, pattern = "\\.xls$", full.names = TRUE)
+
+soi_2006_all <- map_dfr(files_2006, clean_soi_2006_file)
+
+dim(soi_2006_all)
+head(soi_2006_all)
+```
+
+```{r}
+## clean SOI county income files for 1990-2006
+
+library(readxl)
+library(dplyr)
+library(stringr)
+library(janitor)
+library(purrr)
+library(tibble)
+
+base_dir <- "C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/raw_data/soi/county"
+
+# clean one file safely
+clean_soi_old_file <- function(file_path, year_value) {
+  file_name <- basename(file_path)
+  
+  # special case: Kentucky 2001 needs a different skip
+  skip_value <- ifelse(file_name == "Kentucky01ci.xls", 6, 7)
+  
+  df <- read_excel(file_path, skip = skip_value) %>%
+    clean_names()
+  
+  # special case: if county column is missing but the rest of the structure exists
+  if (!("county" %in% names(df)) &&
+      all(c("codes", "x2", "returns", "exemptions", "gross_income", "salaries") %in% names(df))) {
+    df <- df %>% mutate(county = NA_character_)
+  }
+  
+  # check required columns
+  required_cols <- c("codes", "x2", "county", "returns", "exemptions", "gross_income", "salaries")
+  
+  if (!all(required_cols %in% names(df))) {
+    stop(
+      paste0(
+        "Missing columns in file: ", file_name,
+        " | found: ", paste(names(df), collapse = ", ")
+      )
+    )
+  }
+  
+  df %>%
+    rename(
+      state_fips   = codes,
+      county_code  = x2,
+      county_name  = county,
+      n_returns    = returns,
+      n_exemptions = exemptions,
+      agi          = gross_income,
+      wages        = salaries
+    ) %>%
+    mutate(
+      state_fips   = str_pad(as.character(state_fips), 2, pad = "0"),
+      county_code  = str_pad(as.character(county_code), 3, pad = "0"),
+      county_fips  = paste0(state_fips, county_code),
+      county_name  = as.character(county_name),
+      county_name  = str_trim(county_name),
+      county_name  = str_remove(county_name, " COUNTY$"),
+      n_returns    = as.numeric(gsub(",", "", n_returns)),
+      n_exemptions = as.numeric(gsub(",", "", n_exemptions)),
+      agi          = as.numeric(gsub(",", "", agi)),
+      wages        = as.numeric(gsub(",", "", wages)),
+      year         = year_value,
+      source_file  = file_name
+    ) %>%
+    filter(
+      !is.na(state_fips),
+      !is.na(county_code),
+      county_code != "000"
+    ) %>%
+    select(
+      state_fips, county_code, county_fips, county_name,
+      year, n_returns, n_exemptions, agi, wages, source_file
+    )
+}
+
+# clean one year safely
+clean_soi_old_year <- function(year_value, base_dir) {
+  year_dirs <- list.dirs(base_dir, recursive = FALSE, full.names = TRUE)
+  
+  year_folder <- year_dirs[
+    grepl(paste0("^", year_value), basename(year_dirs), ignore.case = TRUE)
+  ]
+  
+  if (length(year_folder) == 0) {
+    message("Processing year: ", year_value, " | no matching folder found")
+    return(list(data = tibble(), failed = tibble()))
+  }
+  
+  files_year <- list.files(
+    year_folder[1],
+    pattern = "\\.(xls|xlsx)$",
+    full.names = TRUE,
+    recursive = TRUE,
+    ignore.case = TRUE
+  )
+  
+  message("Processing year: ", year_value, " | files: ", length(files_year))
+  
+  if (length(files_year) == 0) {
+    return(list(data = tibble(), failed = tibble()))
+  }
+  
+  results <- map(files_year, function(f) {
+    tryCatch(
+      list(
+        data = clean_soi_old_file(f, year_value),
+        failed = NULL
+      ),
+      error = function(e) {
+        list(
+          data = NULL,
+          failed = tibble(
+            year = year_value,
+            file = basename(f),
+            error = e$message
+          )
+        )
+      }
+    )
+  })
+  
+  data_out <- map_dfr(results, "data")
+  failed_out <- map_dfr(results, "failed")
+  
+  list(data = data_out, failed = failed_out)
+}
+
+# run all years
+years_old <- 1990:2006
+
+all_results <- map(years_old, ~ clean_soi_old_year(.x, base_dir))
+
+soi_1990_2006 <- map_dfr(all_results, "data")
+failed_files  <- map_dfr(all_results, "failed")
+
+# checks
+dim(soi_1990_2006)
+head(soi_1990_2006)
+
+soi_1990_2006 %>% count(year)
+
+soi_1990_2006 %>%
+  summarise(n_county_fips = n_distinct(county_fips))
+
+colSums(is.na(soi_1990_2006))
+
+# failed files
+failed_files
+
+# save outputs
+write.csv(
+  soi_1990_2006,
+  "C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/output/soi_1990_2006_clean.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  failed_files,
+  "C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/output/soi_1990_2006_failed_files.csv",
+  row.names = FALSE
+)
+
+soi_1990_2006 %>% count(year)
+failed_files
+
+dim(soi_1990_2006)
+
+soi_1990_2006 %>% 
+  summarise(n_county_fips = n_distinct(county_fips))
+
+colSums(is.na(soi_1990_2006))
+
+soi_1990_2006 %>% 
+  count(year) %>% 
+  arrange(year)
+
+
+```
+
+```{r}
+# combined all data
+names(soi_1990_2006)
+names(county_panel_2007_2022)
+
+#standardize 1990-2006
+soi_1990_2006_std <- soi_1990_2006 %>%
+  mutate(
+    state_fips  = str_pad(as.character(state_fips), 2, pad = "0"),
+    county_code = str_pad(as.character(county_code), 3, pad = "0"),
+    county_fips = str_pad(as.character(county_fips), 5, pad = "0"),
+    county_name = as.character(county_name)
+  ) %>%
+  select(
+    year, state_fips, county_code, county_fips, county_name,
+    n_returns, n_exemptions, agi, wages
+  )
+
+#standardize 2007-2022
+soi_2007_2022_std <- county_panel_2007_2022 %>%
+  mutate(
+    year        = as.integer(year),
+    state_fips  = str_pad(as.character(state_fips), 2, pad = "0"),
+    county_fips = str_pad(as.character(county_fips), 5, pad = "0"),
+    county_code = substr(county_fips, 3, 5),
+    county_name = as.character(county_name),
+    n_returns   = as.numeric(n1),
+    n_exemptions= as.numeric(n2),
+    agi         = as.numeric(a00100),
+    wages       = as.numeric(a00200)
+  ) %>%
+  select(
+    year, state_fips, county_code, county_fips, county_name,
+    n_returns, n_exemptions, agi, wages
+  )
+
+#combine
+soi_county_panel_1990_2022 <- bind_rows(
+  soi_1990_2006_std,
+  soi_2007_2022_std
+)
+
+#checks
+dim(soi_county_panel_1990_2022)
+
+soi_county_panel_1990_2022 %>%
+  count(year) %>%
+  arrange(year)
+
+soi_county_panel_1990_2022 %>%
+  count(year, county_fips) %>%
+  filter(n > 1)
+
+colSums(is.na(soi_county_panel_1990_2022))
+
+#save final file
+write_csv(
+  soi_county_panel_1990_2022,
+  "output/soi_county_panel_1990_2022.csv"
+)
+
+soi_county_panel_1990_2022 <- soi_county_panel_1990_2022 %>%
+  filter(
+    !is.na(county_fips),
+    str_detect(county_fips, "^[0-9]{5}$")
+  )
+
+colSums(is.na(soi_county_panel_1990_2022))
+
+soi_county_panel_1990_2022 <- soi_county_panel_1990_2022 %>%
+  group_by(year, state_fips, county_fips, county_name) %>%
+  summarise(
+    n_returns    = sum(n_returns, na.rm = TRUE),
+    n_exemptions = sum(n_exemptions, na.rm = TRUE),
+    agi          = sum(agi, na.rm = TRUE),
+    wages        = sum(wages, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+soi_county_panel_1990_2022 %>%
+  count(year) %>%
+  arrange(year)
+```
+
+```{r}
+# clean year 1989
+county_1989 <- read_csv(
+  "raw_data/soi/county/1989countyincome/89incyallnoagi.csv",
+  show_col_types = FALSE
+)
+
+names(county_1989)
+dim(county_1989)
+
+county_1989 %>%
+  head(10)
+
+county_1989_clean <- county_1989 %>%
+  rename(
+    state = STATE,
+    state_fips = STATEFIPS,
+    county_fips = COUNTYFIPS,
+    county_name = COUNTYNAME,
+    n1 = N1,
+    n2 = N2,
+    a00100 = AGI,
+    a00200 = WAGES_SAL,
+    a00600 = DIVIDENDS,
+    a00300 = INTEREST
+  ) %>%
+  mutate(
+    year = 1989,
+    state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+    county_fips = str_pad(as.character(county_fips), 3, pad = "0")
+  )
+
+county_1989_clean %>%
+  select(year, state_fips, state, county_fips, county_name, n1, n2, a00100, a00200, a00600, a00300) %>%
+  head(20)
+
+county_1989_common <- county_1989_clean %>%
+  select(all_of(common_vars))
+
+county_panel_1989_2022 <- bind_rows(
+  county_1989_common,
+  county_panel_2007_2022
+)
+
+county_panel_1989_2022 %>% count(year)
+dim(county_panel_1989_2022)
+
+write_csv(
+  county_panel_1989_2022,
+  "output/soi_county_panel_1989_2022.csv"
+)
+
+```
+
