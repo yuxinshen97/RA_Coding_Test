@@ -13,21 +13,13 @@ This repository contains my submission for the RA coding test. It includes two t
 
 ```text
 RA_Coding_Test/
-├── raw_data/
-│   ├── bea/
-│   ├── bls/
-│   └── soi/
-│       ├── county/
-│       └── zip/
 ├── code/
 │   ├── Task_1_Yuxin_S.Rmd
 │   └── Task_2_Yuxin_S.Rmd
 ├── output/
-│   ├── task1_bea_county_panel.csv
-│   ├── task1_bls_county_panel.csv
-│   ├── task1_county_year_panel.csv
-│   ├── task2_soi_county_year_panel.csv
-│   └── task2_soi_zip_year_panel.csv
+│   ├── bea_county_panel.csv
+│   ├── bls_county_panel.csv
+│   └── soi_county_panel_1989_2022.csv
 ├── docs/
 │   ├── task1_data_summary.md
 │   └── task2_data_summary.md
