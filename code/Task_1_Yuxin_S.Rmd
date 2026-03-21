@@ -528,5 +528,166 @@ names(county_year)
 head(bea[, c("state_name", "state_abbr")], 5)
 head(bls[, c("state_name", "state_abbr")], 5)
 head(county_year[, c("state_name", "state_abbr")], 5)
+
+fwrite(bea, "../output/bea_county_panel_revised.csv")
+fwrite(bls, "../output/bls_county_panel_revised.csv")
+fwrite(county_year, "../output/county_year_panel_revised.csv")
+```
+
+```{r}
+library(data.table)
+library(dplyr)
+library(tibble)
+library(knitr)
+
+bea <- fread("../output/bea_county_panel_revised.csv")
+bls <- fread("../output/bls_county_panel_revised.csv")
+county_year <- fread("../output/county_year_panel_revised.csv")
+
+bea_vars <- c("income", "population", "income_per_capita")
+
+bea_overview <- tibble(
+  panel = "BEA county panel",
+  n_rows = nrow(bea),
+  n_counties = nrow(distinct(bea, state_fips, county_fips)),
+  n_years = n_distinct(bea$year),
+  earliest_year = min(bea$year, na.rm = TRUE),
+  latest_year = max(bea$year, na.rm = TRUE)
+)
+
+bea_availability <- bind_rows(lapply(bea_vars, function(v) {
+  x <- bea[[v]]
+  tibble(
+    variable = v,
+    earliest_year_available = min(bea$year[!is.na(x)], na.rm = TRUE),
+    latest_year_available = max(bea$year[!is.na(x)], na.rm = TRUE),
+    nonmissing_n = sum(!is.na(x))
+  )
+}))
+
+bea_stats <- bind_rows(lapply(bea_vars, function(v) {
+  x <- as.numeric(bea[[v]])
+  tibble(
+    variable = v,
+    mean = mean(x, na.rm = TRUE),
+    median = median(x, na.rm = TRUE),
+    sd = sd(x, na.rm = TRUE),
+    min = min(x, na.rm = TRUE),
+    max = max(x, na.rm = TRUE),
+    n_obs = sum(!is.na(x))
+  )
+}))
+
+bea_year_counts <- bea %>%
+  group_by(year) %>%
+  summarise(
+    n_rows = n(),
+    n_counties = nrow(distinct(cur_data(), state_fips, county_fips)),
+    .groups = "drop"
+  ) %>%
+  arrange(year)
+
+kable(bea_overview, caption = "BEA Panel Overview")
+kable(bea_availability, caption = "BEA Variable Availability")
+kable(bea_stats, digits = 2, caption = "BEA Summary Statistics")
+kable(bea_year_counts, caption = "BEA Panel Counts by Year")
+
+
+bls_vars <- c("unemployment_rate")
+
+bls_overview <- tibble(
+  panel = "BLS county panel",
+  n_rows = nrow(bls),
+  n_counties = nrow(distinct(bls, state_fips, county_fips)),
+  n_years = n_distinct(bls$year),
+  earliest_year = min(bls$year, na.rm = TRUE),
+  latest_year = max(bls$year, na.rm = TRUE)
+)
+
+bls_availability <- bind_rows(lapply(bls_vars, function(v) {
+  x <- bls[[v]]
+  tibble(
+    variable = v,
+    earliest_year_available = min(bls$year[!is.na(x)], na.rm = TRUE),
+    latest_year_available = max(bls$year[!is.na(x)], na.rm = TRUE),
+    nonmissing_n = sum(!is.na(x))
+  )
+}))
+
+bls_stats <- bind_rows(lapply(bls_vars, function(v) {
+  x <- as.numeric(bls[[v]])
+  tibble(
+    variable = v,
+    mean = mean(x, na.rm = TRUE),
+    median = median(x, na.rm = TRUE),
+    sd = sd(x, na.rm = TRUE),
+    min = min(x, na.rm = TRUE),
+    max = max(x, na.rm = TRUE),
+    n_obs = sum(!is.na(x))
+  )
+}))
+
+bls_year_counts <- bls %>%
+  group_by(year) %>%
+  summarise(
+    n_rows = n(),
+    n_counties = nrow(distinct(cur_data(), state_fips, county_fips)),
+    .groups = "drop"
+  ) %>%
+  arrange(year)
+
+kable(bls_overview, caption = "BLS Panel Overview")
+kable(bls_availability, caption = "BLS Variable Availability")
+kable(bls_stats, digits = 2, caption = "BLS Summary Statistics")
+kable(bls_year_counts, caption = "BLS Panel Counts by Year")
+
+
+county_year_vars <- c("unemployment_rate", "income", "population", "income_per_capita")
+
+county_year_overview <- tibble(
+  panel = "Combined county-year panel",
+  n_rows = nrow(county_year),
+  n_counties = nrow(distinct(county_year, state_fips, county_fips)),
+  n_years = n_distinct(county_year$year),
+  earliest_year = min(county_year$year, na.rm = TRUE),
+  latest_year = max(county_year$year, na.rm = TRUE)
+)
+
+county_year_availability <- bind_rows(lapply(county_year_vars, function(v) {
+  x <- county_year[[v]]
+  tibble(
+    variable = v,
+    earliest_year_available = min(county_year$year[!is.na(x)], na.rm = TRUE),
+    latest_year_available = max(county_year$year[!is.na(x)], na.rm = TRUE),
+    nonmissing_n = sum(!is.na(x))
+  )
+}))
+
+county_year_stats <- bind_rows(lapply(county_year_vars, function(v) {
+  x <- as.numeric(county_year[[v]])
+  tibble(
+    variable = v,
+    mean = mean(x, na.rm = TRUE),
+    median = median(x, na.rm = TRUE),
+    sd = sd(x, na.rm = TRUE),
+    min = min(x, na.rm = TRUE),
+    max = max(x, na.rm = TRUE),
+    n_obs = sum(!is.na(x))
+  )
+}))
+
+county_year_counts <- county_year %>%
+  group_by(year) %>%
+  summarise(
+    n_rows = n(),
+    n_counties = nrow(distinct(cur_data(), state_fips, county_fips)),
+    .groups = "drop"
+  ) %>%
+  arrange(year)
+
+kable(county_year_overview, caption = "Combined County-Year Panel Overview")
+kable(county_year_availability, caption = "Combined County-Year Variable Availability")
+kable(county_year_stats, digits = 2, caption = "Combined County-Year Summary Statistics")
+kable(county_year_counts, caption = "Combined County-Year Counts by Year")
 ```
 
