@@ -20,9 +20,9 @@ RA_Coding_Test/
 │   ├── task1_data_summary.md
 │   └── task2_data_summary.md
 ├── output/
-│   ├── bea_county_panel.csv
-│   ├── bls_county_panel.csv
-│   ├── county_year_panel.csv
-│   ├── soi_county_panel_1989_2022.csv
-│   └── soi_zip_panel_2004_2022.csv
+│   ├── bea_county_panel_revised.csv
+│   ├── bls_county_panel_revised.csv
+│   ├── county_year_panel_revised.csv
+│   ├── soi_county_panel_1989_2022_revised.csv
+│   └── soi_zip_panel_2004_2022_revised.csv
 └── README.md
