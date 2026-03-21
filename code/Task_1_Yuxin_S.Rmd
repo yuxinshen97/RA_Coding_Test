@@ -379,6 +379,7 @@ print(n_counties_bls)
 write_csv(bls_clean, "output/bls_county_panel.csv")
   
 ```
+
 ```{r}
 ##Build_panel.R
 library(tidyverse)
@@ -442,4 +443,90 @@ print(missing_pre1990_check)
 write_csv(final_panel, "output/county_year_panel.csv")
 ```
 
+```{r}
+library(data.table)
+library(dplyr)
+library(tibble)
+
+bea <- fread("../output/bea_county_panel.csv")
+bls <- fread("../output/bls_county_panel.csv")
+county_year <- fread("../output/county_year_panel.csv")
+
+state_lookup <- tibble::tribble(
+  ~state_abbr, ~state_name,
+  "AL", "Alabama",
+  "AK", "Alaska",
+  "AZ", "Arizona",
+  "AR", "Arkansas",
+  "CA", "California",
+  "CO", "Colorado",
+  "CT", "Connecticut",
+  "DE", "Delaware",
+  "DC", "District of Columbia",
+  "FL", "Florida",
+  "GA", "Georgia",
+  "HI", "Hawaii",
+  "ID", "Idaho",
+  "IL", "Illinois",
+  "IN", "Indiana",
+  "IA", "Iowa",
+  "KS", "Kansas",
+  "KY", "Kentucky",
+  "LA", "Louisiana",
+  "ME", "Maine",
+  "MD", "Maryland",
+  "MA", "Massachusetts",
+  "MI", "Michigan",
+  "MN", "Minnesota",
+  "MS", "Mississippi",
+  "MO", "Missouri",
+  "MT", "Montana",
+  "NE", "Nebraska",
+  "NV", "Nevada",
+  "NH", "New Hampshire",
+  "NJ", "New Jersey",
+  "NM", "New Mexico",
+  "NY", "New York",
+  "NC", "North Carolina",
+  "ND", "North Dakota",
+  "OH", "Ohio",
+  "OK", "Oklahoma",
+  "OR", "Oregon",
+  "PA", "Pennsylvania",
+  "RI", "Rhode Island",
+  "SC", "South Carolina",
+  "SD", "South Dakota",
+  "TN", "Tennessee",
+  "TX", "Texas",
+  "UT", "Utah",
+  "VT", "Vermont",
+  "VA", "Virginia",
+  "WA", "Washington",
+  "WV", "West Virginia",
+  "WI", "Wisconsin",
+  "WY", "Wyoming"
+)
+
+bea <- bea %>%
+  left_join(state_lookup, by = "state_name") %>%
+  relocate(state_abbr, .after = state_name)
+
+bls <- bls %>%
+  left_join(state_lookup, by = "state_name") %>%
+  relocate(state_abbr, .after = state_name)
+
+county_year <- county_year %>%
+  left_join(state_lookup, by = "state_name") %>%
+  relocate(state_abbr, .after = state_name)
+```
+
+```{r}
+names(bea)
+names(bls)
+names(county_year)
+
+head(bea[, c("state_name", "state_abbr")], 5)
+head(bls[, c("state_name", "state_abbr")], 5)
+head(county_year[, c("state_name", "state_abbr")], 5)
+```
 

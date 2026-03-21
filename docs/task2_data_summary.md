@@ -1,125 +1,43 @@
-## ZIP-Year SOI Panel
+## Data Summary
 
-The ZIP-year SOI panel is organized so that each observation represents one ZIP code in one year.
+### County SOI Panel
 
-Because the raw IRS ZIP files were not fully standardized across years, I used the same common-variable harmonization strategy as in the county panel. I retained a core set of variables that could be identified consistently across the ZIP-level files from 2004 onward.
+The revised county SOI panel contains **53,410 observations** covering **3,220 county-equivalent units** across **17 years**, from **1989 to 2022**. The panel is not a fully consecutive annual panel, but it covers the available county-level IRS SOI releases retained in the final harmonized dataset.
 
-The harmonized ZIP-year panel currently includes the following variables:
+For all six key variables (`n1`, `n2`, `a00100`, `a00200`, `a00300`, and `a00600`), the earliest available year is **1989** and the latest available year is **2022**. Missingness is limited. The number of non-missing observations is **53,407** for `n1`, **53,407** for `n2`, **53,408** for `a00100`, **53,406** for `a00200`, **53,405** for `a00300`, and **53,397** for `a00600`.
 
-- `year`
-- `state_fips`
-- `state`
-- `zipcode`
-- `n1` — number of returns
-- `n2` — number of exemptions
-- `a00100` — adjusted gross income
-- `a00200` — wages and salaries
-- `a00600` — dividends
-- `a00300` — interest
+After revision, the county panel is consistently organized at the county-year level. Year-by-year row counts are stable, generally around **3,140–3,143 observations per year**. The number of county-equivalent units is **321** in 1989, **324** in most years from 2007 to 2018, **325** in 2019 and 2020, and **329** in 2021 and 2022. This modest increase in recent years likely reflects source coverage differences rather than a coding error.
 
-## Data Sources Used
+A few notable anomalies remain. Negative values remain mainly in `a00100`, which is consistent with the definition of adjusted gross income. The minimum of `a00300` is `-1`, which appears to be a rare edge case. Relative to the original output, the revised county panel is much more internally consistent after recoding suppressed values as missing, removing state total rows, and collapsing post-2010 county-by-AGI-group files to the county-year level.
 
-The ZIP-level SOI panel was constructed from IRS ZIP code income files distributed in multiple formats across years.
+### County SOI Panel Summary Statistics
 
-For the completed portion of the ZIP panel, I used ZIP-level files for 2004–2022. These files were not released in a uniform format. Depending on the year, they appeared as:
+| Variable | Mean | Median | Standard Deviation | Min | Max | Observations |
+|---|---:|---:|---:|---:|---:|---:|
+| `n1` | 45,888.90 | 10,830 | 148,588.7 | 0 | 5,028,630 | 53,407 |
+| `n2` | 89,641.18 | 22,108 | 288,359.8 | 0 | 9,293,169 | 53,407 |
+| `a00100` | 3,080,333.58 | 502,365 | 11,910,760.6 | -198,783 | 480,343,326 | 53,408 |
+| `a00200` | 2,133,164.52 | 353,061 | 7,999,809.6 | 0 | 305,958,865 | 53,406 |
+| `a00300` | 44,502.06 | 6,082 | 323,016.2 | -1 | 52,646,635 | 53,405 |
+| `a00600` | 75,031.76 | 6,712 | 394,368.7 | 0 | 14,222,363 | 53,397 |
 
-- state-level Excel files
-- all-state CSV files
-- ZIP-by-AGI grouped files with different naming conventions
+### ZIP SOI Panel
 
-## Construction Steps
+The revised ZIP SOI panel contains **571,112 observations** covering **39,059 ZIP units** across **19 years**, from **2004 to 2022**. Each observation represents one ZIP code in one year.
 
-1. Downloaded ZIP-level IRS SOI files for available years used in the final panel.
-2. Reviewed file layouts and documentation for different ZIP-file periods.
-3. Identified a common set of identifier and income variables that could be retained across years.
-4. Standardized ZIP codes as 5-character strings to preserve leading zeros.
-5. Standardized state abbreviations and state FIPS codes.
-6. Renamed variables into a common format across years.
-7. Added year identifiers to each cleaned file.
-8. Cleaned ZIP-by-AGI-group records and aggregated them into ZIP-year observations.
-9. Combined cleaned yearly files into a unified ZIP-year SOI panel.
+For all six key variables in the ZIP panel, the earliest available year is **2004** and the latest available year is **2022**. In the revised ZIP panel, all six variables are fully observed across the retained records, with **571,112** non-missing observations for each of `n1`, `n2`, `a00100`, `a00200`, `a00300`, and `a00600`.
 
-## How Inconsistencies Across Years Were Handled
+The ZIP-year counts are relatively stable over time. The panel contains **35,701 observations** in 2004, roughly **38,500 observations** in 2005–2007, and roughly **27,600 to 29,900 observations** per year from 2008 onward. The number of distinct ZIP units per year follows a similar pattern. Compared with the county panel, the revised ZIP panel does not show the same aggregation inconsistency problem and appears to be consistently organized at the ZIP-year level after harmonization.
 
-The main challenge in the ZIP panel was that variable names, file layouts, and release formats changed across time.
+The main notable pattern in the ZIP panel is that `a00100` includes some negative values, which is acceptable given the variable definition. Otherwise, the key variables are nonnegative in the revised output, and no major anomalies remain after standardizing identifiers, harmonizing variable names, and aggregating ZIP-by-AGI-group records into ZIP-year observations.
 
-### 2004
+### ZIP SOI Panel Summary Statistics
 
-The 2004 ZIP files were distributed as separate state-level Excel files. Within each file, ZIP codes and AGI classes appeared in a stacked layout rather than a flat rectangular table. ZIP code rows and AGI-class rows had to be separated and linked during cleaning.
-
-To harmonize these files, I:
-
-- skipped non-data title and header rows
-- identified rows containing ZIP codes
-- filled ZIP identifiers downward to the associated AGI rows
-- mapped AGI class labels into a common `agi_stub` field
-- retained only the common variables used in the final ZIP panel
-- aggregated ZIP-by-AGI records into ZIP-year observations
-
-### 2005–2008
-
-The 2005–2008 ZIP files used older all-state CSV layouts. In these files:
-
-- some identifier variables appeared in a different order
-- the AGI grouping variable appeared as `agi_class` in some years
-- ZIP code variable capitalization differed across files
-- some files did not directly include `statefips`
-
-To harmonize these years, I:
-
-- converted all column names to lowercase
-- mapped older AGI-group variables such as `agi_class` into a common `agi_stub` field
-- standardized `zipcode` as a 5-character string
-- converted state abbreviations to uppercase
-- generated `state_fips` from state abbreviations when it was not explicitly provided
-
-### 2009–2010
-
-The 2009–2010 ZIP files were closer to the later standardized format. These files already included variables such as `STATEFIPS`, `STATE`, `zipcode`, and `agi_stub`, though capitalization still differed from later years.
-
-To harmonize these years, I:
-
-- standardized all column names
-- preserved leading zeros in ZIP codes and state FIPS codes
-- retained only the common variables used in the final ZIP panel
-
-### 2011–2022
-
-The 2011–2022 ZIP files were more standardized and included a consistent set of variables across years. These files used a common structure with variables such as `STATEFIPS`, `STATE`, `ZIPCODE`, `agi_stub`, `N1`, `N2`, `A00100`, `A00200`, `A00300`, and `A00600`.
-
-These files were harmonized by:
-
-- converting variable names to lowercase
-- standardizing ZIP and state FIPS identifiers
-- retaining the common core variables
-- aggregating across AGI groups to create one ZIP-year observation per ZIP code per year
-
-## Aggregation Logic
-
-The raw ZIP files were initially read at the ZIP-by-AGI-group level. In other words, each ZIP code appeared multiple times within a year, once for each AGI group.
-
-To construct the final ZIP-year panel, I aggregated these records across AGI groups within each year, state, and ZIP code. This produced a single observation per ZIP code per year in the final dataset.
-
-During this step, I also rounded aggregated values where needed to remove small decimal artifacts introduced by IRS disclosure-related coding conventions in the source files.
-
-## Assumptions
-
-- A common-variable strategy was used rather than attempting to retain all year-specific ZIP variables.
-- ZIP codes were stored as 5-character strings to preserve leading zeros.
-- When `state_fips` was not explicitly available in older ZIP files, it was reconstructed from the state abbreviation.
-- The final ZIP-year panel was created by aggregating across AGI groups within a year and ZIP code.
-- Only variables with clearly comparable meanings across years were retained in the final ZIP panel.
-- For some older ZIP releases, variables available in later years were not consistently reported. In such cases, unavailable variables were set to missing rather than imputed.
-
-## Notable Observations
-
-- The ZIP-level files are less uniform than they initially appear, especially in the 2004–2010 period.
-- The main inconsistencies involve identifier names, AGI-group variable names, file layout, and the presence or absence of `statefips`.
-- The 2004 state-level files required the most manual restructuring because ZIP codes and AGI categories were embedded in a stacked format.
-- Later ZIP files are much easier to standardize than earlier ones.
-- Constructing a clean ZIP-year panel requires first cleaning ZIP-by-AGI records and then aggregating them to the ZIP-year level.
-
-## Final Output Files
-
-- `output/soi_county_panel_1989_2022.csv`
-- `output/soi_zip_panel_2004_2022.csv`
+| Variable | Mean | Median | Standard Deviation | Min | Max | Observations |
+|---|---:|---:|---:|---:|---:|---:|
+| `n1` | 8,400.388 | 1,540.0 | 153,536.4 | 0 | 18,878,390 | 571,112 |
+| `n2` | 16,312.205 | 3,069.0 | 299,503.3 | 0 | 35,759,770 | 571,112 |
+| `a00100` | 29,201,656.739 | 121,688.0 | 174,768,496.3 | -57,969 | 16,765,584,053 | 571,112 |
+| `a00200` | 20,373,135.418 | 84,603.5 | 115,145,808.4 | 0 | 6,252,241,013 | 571,112 |
+| `a00300` | 768,449.665 | 913.0 | 6,928,752.4 | 0 | 1,287,790,267 | 571,112 |
+| `a00600` | 707,844.970 | 1,127.0 | 7,710,274.7 | 0 | 1,082,440,596 | 571,112 |

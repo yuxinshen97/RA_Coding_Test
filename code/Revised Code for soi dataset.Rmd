@@ -1,0 +1,359 @@
+
+```{r}
+options(scipen = 999)
+
+county %>%
+  summarise(
+    neg_n1 = sum(n1 < 0, na.rm = TRUE),
+    neg_n2 = sum(n2 < 0, na.rm = TRUE),
+    neg_a00100 = sum(a00100 < 0, na.rm = TRUE),
+    neg_a00200 = sum(a00200 < 0, na.rm = TRUE),
+    neg_a00300 = sum(a00300 < 0, na.rm = TRUE),
+    neg_a00600 = sum(a00600 < 0, na.rm = TRUE)
+  )
+
+zipdat %>%
+  summarise(
+    neg_n1 = sum(n1 < 0, na.rm = TRUE),
+    neg_n2 = sum(n2 < 0, na.rm = TRUE),
+    neg_a00100 = sum(a00100 < 0, na.rm = TRUE),
+    neg_a00200 = sum(a00200 < 0, na.rm = TRUE),
+    neg_a00300 = sum(a00300 < 0, na.rm = TRUE),
+    neg_a00600 = sum(a00600 < 0, na.rm = TRUE)
+  )
+
+county %>%
+  summarise(
+    zero_n1 = sum(n1 == 0, na.rm = TRUE),
+    zero_n2 = sum(n2 == 0, na.rm = TRUE),
+    zero_a00100 = sum(a00100 == 0, na.rm = TRUE),
+    zero_a00200 = sum(a00200 == 0, na.rm = TRUE),
+    zero_a00300 = sum(a00300 == 0, na.rm = TRUE),
+    zero_a00600 = sum(a00600 == 0, na.rm = TRUE)
+  )
+
+zipdat %>%
+  summarise(
+    zero_n1 = sum(n1 == 0, na.rm = TRUE),
+    zero_n2 = sum(n2 == 0, na.rm = TRUE),
+    zero_a00100 = sum(a00100 == 0, na.rm = TRUE),
+    zero_a00200 = sum(a00200 == 0, na.rm = TRUE),
+    zero_a00300 = sum(a00300 == 0, na.rm = TRUE),
+    zero_a00600 = sum(a00600 == 0, na.rm = TRUE)
+  )
+
+county %>%
+  filter(a00100 < 0 | a00200 < 0 | a00300 < 0 | a00600 < 0) %>%
+  select(year, state, county_name, a00100, a00200, a00300, a00600) %>%
+  head(30)
+
+#n1 (Number of returns), n2 (Number of individuals), a00200 (Salaries and wages amount), a00300 (Taxable interest amount), and a00600 (Ordinary dividends amount) should all be non-negative. By contrast, a00100 (Adjusted Gross Income, less deficit) can in principle take negative values. That said, the pattern of negative a00100 values differs substantially across the two tables, which suggests that this variable deserves closer checking.
+```
+
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(stringr)
+library(data.table)
+
+clean_soi_numeric <- function(x) {
+  x <- trimws(as.character(x))
+  x[x %in% c("", "NA", "N/A", "(1)")] <- NA
+  x <- gsub(",", "", x)
+  suppressWarnings(as.numeric(x))
+}
+
+read_one_county_file <- function(file_path, year) {
+  raw <- read_xls(file_path, col_names = FALSE)
+
+  
+  dat <- raw %>% slice(-(1:8))
+
+  
+  dat <- dat[, 1:9]
+
+  names(dat) <- c(
+    "state_fips", "county_fips", "county_name",
+    "n1", "n2", "a00100", "a00200", "a00600", "a00300"
+  )
+
+  dat <- dat %>%
+    mutate(across(everything(), as.character)) %>%
+    mutate(
+      state_fips  = trimws(state_fips),
+      county_fips = trimws(county_fips),
+      county_name = str_squish(county_name)
+    ) %>%
+    filter(
+      !is.na(state_fips),
+      !is.na(county_fips),
+      !is.na(county_name),
+      state_fips != "",
+      county_fips != "",
+      county_name != "",
+      grepl("^\\d+$", state_fips),
+      grepl("^\\d+$", county_fips)
+    ) %>%
+    mutate(
+      year = year,
+      state = str_extract(basename(file_path), "[A-Z]{2}(?=\\.xls$)"),
+      state_fips  = sprintf("%02d", as.integer(state_fips)),
+      county_fips = as.integer(county_fips),
+      across(c(n1, n2, a00100, a00200, a00600, a00300), clean_soi_numeric)
+    ) %>%
+    select(year, state_fips, state, county_fips, county_name,
+           n1, n2, a00100, a00200, a00600, a00300)
+
+  dat
+}
+
+build_county_panel_for_year <- function(folder_path, year) {
+  files <- list.files(folder_path, pattern = "\\.xls$", full.names = TRUE)
+
+  panel_list <- lapply(files, function(f) read_one_county_file(f, year))
+  panel <- bind_rows(panel_list)
+
+  panel <- panel %>%
+    filter(
+      !is.na(county_name),
+      county_name != "",
+      !(is.na(n1) & is.na(n2) & is.na(a00100) &
+          is.na(a00200) & is.na(a00600) & is.na(a00300))
+    )
+
+  panel
+}
+
+panel_2008 <- build_county_panel_for_year(
+  "../raw_data/soi/county/2008_states/2008 County Income",
+  2008
+)
+
+panel_2009 <- build_county_panel_for_year(
+  "../raw_data/soi/county/2009_states/2009 County Income",
+  2009
+)
+
+dim(panel_2008)
+dim(panel_2009)
+
+panel_2008 %>% filter(state == "AK") %>% head(10)
+panel_2009 %>% filter(state == "AK") %>% head(10)
+
+panel_2008 %>% filter(is.na(county_name))
+panel_2009 %>% filter(is.na(county_name))
+
+fwrite(panel_2008, "../output/soi_county_2008_clean.csv")
+fwrite(panel_2009, "../output/soi_county_2009_clean.csv")
+
+county_all <- fread("../output/soi_county_panel_1989_2022.csv")
+
+county_all_keep <- county_all %>%
+  filter(!year %in% c(2008, 2009))
+
+names(county_all_keep)
+names(panel_2008)
+names(panel_2009)
+
+county_all_new <- bind_rows(
+  county_all_keep,
+  panel_2008,
+  panel_2009
+) %>%
+  arrange(year, state_fips, county_fips)
+
+county_all_new %>%
+  count(year) %>%
+  filter(year %in% c(2007, 2008, 2009, 2010))
+
+county_all_new %>%
+  filter(
+    year %in% c(2008, 2009),
+    is.na(county_name) |
+      (is.na(n1) & is.na(n2) & is.na(a00100) & is.na(a00200) & is.na(a00300) & is.na(a00600))
+  )
+```
+```{r}
+# recheck
+#NA
+county_all_new %>%
+  filter(
+    is.na(county_name) |
+    county_name == "" |
+    (is.na(n1) & is.na(n2) & is.na(a00100) & is.na(a00200) & is.na(a00300) & is.na(a00600))
+  ) %>%
+  arrange(year, state) %>%
+  select(year, state, county_fips, county_name, n1, n2, a00100, a00200, a00300, a00600)
+
+# find the number of rows have some problem
+county_all_new %>%
+  count(year) %>%
+  arrange(year)
+
+county_fixed <- county_all_new %>%
+  group_by(year, state_fips, state, county_fips, county_name) %>%
+  summarise(
+    n1     = if (all(is.na(n1))) NA_real_ else sum(n1, na.rm = TRUE),
+    n2     = if (all(is.na(n2))) NA_real_ else sum(n2, na.rm = TRUE),
+    a00100 = if (all(is.na(a00100))) NA_real_ else sum(a00100, na.rm = TRUE),
+    a00200 = if (all(is.na(a00200))) NA_real_ else sum(a00200, na.rm = TRUE),
+    a00600 = if (all(is.na(a00600))) NA_real_ else sum(a00600, na.rm = TRUE),
+    a00300 = if (all(is.na(a00300))) NA_real_ else sum(a00300, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(year, state_fips, county_fips)
+
+county_fixed %>%
+  count(year) %>%
+  arrange(year)
+
+county_fixed %>%
+  summarise(
+    neg_n1 = sum(n1 < 0, na.rm = TRUE),
+    neg_n2 = sum(n2 < 0, na.rm = TRUE),
+    neg_a00100 = sum(a00100 < 0, na.rm = TRUE),
+    neg_a00200 = sum(a00200 < 0, na.rm = TRUE),
+    neg_a00300 = sum(a00300 < 0, na.rm = TRUE),
+    neg_a00600 = sum(a00600 < 0, na.rm = TRUE)
+  )
+
+county_fixed %>%
+  filter(
+    n1 < 0 | n2 < 0 | a00200 < 0 | a00300 < 0 | a00600 < 0 | a00100 < 0
+  ) %>%
+  arrange(year, state, county_name) %>%
+  select(year, state, county_fips, county_name, n1, n2, a00100, a00200, a00300, a00600)
+
+county_fixed <- county_fixed %>%
+  mutate(
+    n1     = ifelse(n1 == -1, NA, n1),
+    n2     = ifelse(n2 == -1, NA, n2),
+    a00200 = ifelse(a00200 == -1, NA, a00200),
+    a00600 = ifelse(a00600 == -1, NA, a00600)
+  )
+
+county_fixed %>%
+  summarise(
+    neg_n1 = sum(n1 < 0, na.rm = TRUE),
+    neg_n2 = sum(n2 < 0, na.rm = TRUE),
+    neg_a00100 = sum(a00100 < 0, na.rm = TRUE),
+    neg_a00200 = sum(a00200 < 0, na.rm = TRUE),
+    neg_a00300 = sum(a00300 < 0, na.rm = TRUE),
+    neg_a00600 = sum(a00600 < 0, na.rm = TRUE)
+  )
+```
+```{r}
+
+```
+
+```{r}
+library(data.table)
+library(dplyr)
+library(tibble)
+
+county <- fread("../output/soi_county_panel_1989_2022_revised.csv")
+zipdat <- fread("../output/soi_zip_panel_2004_2022_revised.csv")
+
+key_vars <- c("n1", "n2", "a00100", "a00200", "a00300", "a00600")
+
+
+county_overview <- tibble(
+  panel = "County SOI panel",
+  n_rows = nrow(county),
+  n_counties = nrow(distinct(county, state_fips, county_fips)),
+  n_years = n_distinct(county$year),
+  earliest_year = min(county$year, na.rm = TRUE),
+  latest_year = max(county$year, na.rm = TRUE)
+)
+
+zip_overview <- tibble(
+  panel = "ZIP SOI panel",
+  n_rows = nrow(zipdat),
+  n_zips = nrow(distinct(zipdat, state_fips, zipcode)),
+  n_years = n_distinct(zipdat$year),
+  earliest_year = min(zipdat$year, na.rm = TRUE),
+  latest_year = max(zipdat$year, na.rm = TRUE)
+)
+
+county_overview
+zip_overview
+
+
+county_availability <- bind_rows(lapply(key_vars, function(v) {
+  x <- county[[v]]
+  tibble(
+    variable = v,
+    earliest_year_available = min(county$year[!is.na(x)], na.rm = TRUE),
+    latest_year_available = max(county$year[!is.na(x)], na.rm = TRUE),
+    nonmissing_n = sum(!is.na(x))
+  )
+}))
+
+zip_availability <- bind_rows(lapply(key_vars, function(v) {
+  x <- zipdat[[v]]
+  tibble(
+    variable = v,
+    earliest_year_available = min(zipdat$year[!is.na(x)], na.rm = TRUE),
+    latest_year_available = max(zipdat$year[!is.na(x)], na.rm = TRUE),
+    nonmissing_n = sum(!is.na(x))
+  )
+}))
+
+county_availability
+zip_availability
+
+county_stats <- bind_rows(lapply(key_vars, function(v) {
+  x <- as.numeric(county[[v]])
+  tibble(
+    variable = v,
+    mean = mean(x, na.rm = TRUE),
+    median = median(x, na.rm = TRUE),
+    sd = sd(x, na.rm = TRUE),
+    min = min(x, na.rm = TRUE),
+    max = max(x, na.rm = TRUE),
+    n_obs = sum(!is.na(x))
+  )
+}))
+
+zip_stats <- bind_rows(lapply(key_vars, function(v) {
+  x <- as.numeric(zipdat[[v]])
+  tibble(
+    variable = v,
+    mean = mean(x, na.rm = TRUE),
+    median = median(x, na.rm = TRUE),
+    sd = sd(x, na.rm = TRUE),
+    min = min(x, na.rm = TRUE),
+    max = max(x, na.rm = TRUE),
+    n_obs = sum(!is.na(x))
+  )
+}))
+
+county_stats
+zip_stats
+
+county_year_counts <- county %>%
+  group_by(year) %>%
+  summarise(
+    n_rows = n(),
+    n_counties = n_distinct(county_fips),
+    .groups = "drop"
+  ) %>%
+  arrange(year)
+
+zip_year_counts <- zipdat %>%
+  group_by(year) %>%
+  summarise(
+    n_rows = n(),
+    n_zips = n_distinct(zipcode),
+    .groups = "drop"
+  ) %>%
+  arrange(year)
+
+county_year_counts
+zip_year_counts
+```
+
+
