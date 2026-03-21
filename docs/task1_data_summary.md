@@ -1,74 +1,28 @@
-# Task 1 Data Summary
+## Data Summary
 
-**Author:** Yuxin Shen
+### Combined County-Year Panel
 
-## Overview
+The revised combined county-year panel contains **180,894 observations** covering **3,279 counties** across **56 years**, from **1969 to 2024**. Each observation represents one county in one year.
 
-Task 1 constructs a U.S. county-year panel dataset by combining county-level data from BEA and BLS. The final panel includes harmonized county identifiers and the following variables:
+The panel combines the cleaned BEA county panel and the cleaned BLS county panel using harmonized state and county identifiers. The BEA data provide `income`, `population`, and `income_per_capita`, while the BLS data provide `unemployment_rate`.
 
-- State name
-- County name
-- State FIPS code
-- County FIPS code
-- Unemployment rate
-- Income
-- Population
-- Income per capita
+For the four key variables, availability differs across sources. The earliest available year for `income`, `population`, and `income_per_capita` is **1969**, and the latest available year is **2024**. For `unemployment_rate`, the earliest available year is **1990** and the latest available year is **2024**. The number of non-missing observations is **112,569** for `unemployment_rate`, **174,148** for `income`, **174,148** for `population`, and **174,148** for `income_per_capita`.
 
-## Dataset Coverage
+The panel is generally well structured at the county-year level after harmonization. Year-by-year counts are stable within source coverage periods. In the earlier years from **1969 to 1989**, the panel contains **3,149 counties** per year. Starting in **1990**, the number increases to **3,279 counties** per year, which likely reflects broader coverage in the merged source files rather than a coding issue.
 
-The Task 1 dataset is organized as a county-year panel. Each observation represents one county in one year.
+A notable feature of the merged panel is that the time coverage of unemployment data is shorter than that of the BEA variables. As a result, the final combined panel is balanced for identifiers within years, but not all variables are observed over the full 1969–2024 period.
 
-The cleaned BEA county panel covers county-level income, population, and income per capita.  
-The cleaned BLS county panel covers county-level unemployment rates.  
-The final merged county-year panel combines these two sources using standardized county identifiers.
+### Combined County-Year Panel Summary Statistics
 
-Because the two sources have different raw formats and different year coverage, the final merged panel reflects the years and county identifiers that can be consistently matched across both datasets.
+| Variable | Mean | Median | Standard Deviation | Min | Max | Observations |
+|---|---:|---:|---:|---:|---:|---:|
+| `unemployment_rate` | 6.03 | 5.3 | 3.15 | 0.4 | 40.6 | 112,569 |
+| `income` | 2,753,689.17 | 414,231.0 | 12,741,751.51 | 183.0 | 818,509,319.0 | 174,148 |
+| `population` | 87,176.83 | 23,434.0 | 285,627.46 | 43.0 | 10,125,014.0 | 174,148 |
+| `income_per_capita` | 23,599.89 | 19,824.0 | 17,573.64 | 1,166.0 | 532,903.0 | 174,148 |
 
-## Data Sources Used
+### Final Output Files
 
-### BEA
-BEA county personal income data were used to construct the income-related variables:
-- personal income
-- population
-- per capita personal income
-
-### BLS
-BLS Local Area Unemployment Statistics were used to construct:
-- unemployment rate
-
-## Construction Steps
-
-1. Downloaded the BEA and BLS county-level raw files.
-2. Cleaned each source separately.
-3. Standardized state and county identifiers.
-4. Preserved leading zeros in FIPS codes.
-5. Harmonized variable names across the two sources.
-6. Merged the two datasets into a final county-year panel.
-
-## How Inconsistencies Were Handled
-
-Several inconsistencies had to be addressed during construction:
-
-- BEA and BLS use different raw file layouts.
-- County and state identifiers had to be standardized before merging.
-- FIPS codes were stored as character variables to preserve leading zeros.
-- County naming conventions sometimes differed across raw sources, so the merge relied primarily on standardized identifiers.
-
-## Assumptions
-
-- State and county FIPS codes were treated as the primary identifiers.
-- The final merged panel was constructed at the county-year level.
-- Variable definitions were taken directly from the underlying BEA and BLS sources.
-
-## Notable Observations
-
-- BEA provides a longer historical time span than BLS.
-- The merged Task 1 panel is constrained by the overlap between the two sources.
-- Preserving standardized county identifiers was essential for reproducibility and accurate merging.
-
-## Final Output Files
-
-- `output/task1_bea_county_panel.csv`
-- `output/task1_bls_county_panel.csv`
-- `output/task1_county_year_panel.csv`
+- `output/bea_county_panel_revised.csv`
+- `output/bls_county_panel_revised.csv`
+- `output/county_year_panel_revised.csv`
