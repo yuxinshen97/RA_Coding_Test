@@ -1,8 +1,8 @@
-# RA Coding Test
+
 
 **Author:** Yuxin Shen
 
-This repository contains my submission for the RA coding test. It includes two tasks:
+This repository includes two tasks:
 
 - **Task 1:** Construct a U.S. county–year panel dataset using BEA and BLS data
 - **Task 2:** Download, clean, harmonize, and construct IRS SOI county–year and ZIP–year panel datasets
