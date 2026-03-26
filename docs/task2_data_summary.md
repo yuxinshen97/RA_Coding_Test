@@ -172,3 +172,16 @@ The main notable pattern in the ZIP panel is that `a00100` includes some negativ
 - `output/soi_zip_panel_2004_2022_revised.csv`
 - `output/soi_zip_panel_2004_2022_python.csv`
 ``
+## Data Comparison with Other Sources
+
+To validate the revised SOI county panel, I compare it with the revised BEA-based county-year panel using matched observations by `year`, `state_fips`, and `county_fips`. The comparison focuses on SOI `n2` versus BEA `population`, and SOI `a00100` versus BEA `income`.
+
+These measures are not expected to be identical in levels. SOI `n2` is a tax-based count rather than a full resident-population measure, and SOI `a00100` is adjusted gross income (AGI), which is narrower than the broader BEA income concept. Therefore, the purpose of this comparison is to assess consistency in county-level patterns and time trends rather than exact equality.
+
+The matched comparison contains 53,269 county-year observations. The cross-sectional relationship is extremely strong: the correlation between SOI `n2` and BEA `population` is 0.9986, and the correlation between SOI `a00100` and BEA `income` is 0.9930. The average `n2 / population` ratio is about 0.875, while the average `a00100 / income` ratio is about 0.569. These results indicate that SOI and BEA differ systematically in level, but remain highly consistent in county-level ordering.
+
+The scatterplots and log-scale plots support this conclusion. In both the population and income comparisons, counties that are larger in one source also tend to be larger in the other. The log-scale relationships are especially close to linear, showing that this consistency holds across both smaller and larger counties.
+
+The time-series comparison shows broadly similar long-run movement, but the SOI series is less smooth around 2008–2009. In those years, both `n2 / population` and `a00100 / income` decline and then recover in 2010, while matched county coverage remains stable. This suggests that the 2008–2009 pattern is unlikely to be caused by merge failure alone. Instead, it more likely reflects the fact that SOI is a tax-based source and may behave differently from BEA aggregates during the financial crisis, possibly because of reporting behavior, coverage differences, or year-specific comparability issues.
+
+Overall, the revised SOI county panel appears highly consistent with the BEA-based panel in cross-county variation and broadly similar in long-run time trends. The main differences reflect definition differences and some caution is warranted for the 2008–2009 SOI observations in raw time-series comparisons.
