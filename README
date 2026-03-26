@@ -1,5 +1,3 @@
-
-
 **Author:** Yuxin Shen
 
 This repository includes two tasks:
@@ -14,15 +12,23 @@ This repository includes two tasks:
 ```text
 RA_Coding_Test/
 ├── code/
+│   ├── Revised Code for soi dataset.Rmd
 │   ├── Task_1_Yuxin_S.Rmd
-│   └── Task_2_Yuxin_S.Rmd
+│   ├── Task_1_Yuxin_S.py
+│   ├── Task_2_Yuxin_S.Rmd
+│   └── Task_2_Yuxin_S.py
 ├── docs/
 │   ├── task1_data_summary.md
 │   └── task2_data_summary.md
 ├── output/
+│   ├── bea_county_panel_python.csv
 │   ├── bea_county_panel_revised.csv
+│   ├── bls_county_panel_python.csv
 │   ├── bls_county_panel_revised.csv
+│   ├── county_year_panel_python.csv
 │   ├── county_year_panel_revised.csv
+│   ├── soi_county_panel_1989_2022_python.csv
 │   ├── soi_county_panel_1989_2022_revised.csv
+│   ├── soi_zip_panel_2004_2022_python.csv
 │   └── soi_zip_panel_2004_2022_revised.csv
 └── README.md
