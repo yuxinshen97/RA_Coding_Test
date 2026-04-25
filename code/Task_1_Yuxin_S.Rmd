@@ -692,6 +692,122 @@ kable(county_year_counts, caption = "Combined County-Year Counts by Year")
 ```
 
 ```{r}
+library(dplyr)
+library(readr)
+library(stringr)
 
+out_dir <- "../output"
+
+clean_keys <- function(df) {
+  names(df) <- tolower(trimws(names(df)))
+  df %>%
+    mutate(
+      year = as.integer(year),
+      state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+      county_fips = str_pad(as.character(county_fips), 3, pad = "0")
+    )
+}
+
+py_bea <- read_csv(file.path(out_dir, "bea_county_panel_python.csv"), show_col_types = FALSE) %>% clean_keys()
+r_bea  <- read_csv(file.path(out_dir, "bea_county_panel_R.csv"), show_col_types = FALSE) %>% clean_keys()
+
+only_r_bea <- anti_join(
+  r_bea,
+  py_bea %>% select(year, state_fips, county_fips),
+  by = c("year", "state_fips", "county_fips")
+)
+
+print(dim(only_r_bea))
+
+print(
+  only_r_bea %>%
+    count(year) %>%
+    arrange(year)
+)
+
+print(
+  only_r_bea %>%
+    count(state_fips) %>%
+    arrange(desc(n))
+)
+
+print(head(only_r_bea, 30))
+```
+```{r}
+library(dplyr)
+library(readr)
+library(stringr)
+
+out_dir <- "../output"
+
+clean_keys <- function(df) {
+  names(df) <- tolower(trimws(names(df)))
+  df %>%
+    mutate(
+      year = as.integer(year),
+      state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+      county_fips = str_pad(as.character(county_fips), 3, pad = "0")
+    )
+}
+
+# read files
+py_bea <- read_csv(file.path(out_dir, "bea_county_panel_python.csv"), show_col_types = FALSE) %>% clean_keys()
+r_bea  <- read_csv(file.path(out_dir, "bea_county_panel_R.csv"), show_col_types = FALSE) %>% clean_keys()
+
+# keep R only on Python common support
+r_bea_50_clean <- semi_join(
+  r_bea,
+  py_bea %>% select(year, state_fips, county_fips),
+  by = c("year", "state_fips", "county_fips")
+)
+
+# check
+cat("Python rows:", nrow(py_bea), "\n")
+cat("R original rows:", nrow(r_bea), "\n")
+cat("R cleaned rows:", nrow(r_bea_50_clean), "\n")
+
+# save cleaned R version
+write_csv(
+  r_bea_50_clean,
+  file.path(out_dir, "bea_county_panel_R.csv")
+)
+
+library(dplyr)
+library(readr)
+library(stringr)
+
+out_dir <- "../output"
+
+clean_keys <- function(df) {
+  names(df) <- tolower(trimws(names(df)))
+  df %>%
+    mutate(
+      year = as.integer(year),
+      state_fips = str_pad(as.character(state_fips), 2, pad = "0"),
+      county_fips = str_pad(as.character(county_fips), 3, pad = "0")
+    )
+}
+
+# read files
+py_bea <- read_csv(file.path(out_dir, "bea_county_panel_python.csv"), show_col_types = FALSE) %>% clean_keys()
+r_bea  <- read_csv(file.path(out_dir, "bea_county_panel_R.csv"), show_col_types = FALSE) %>% clean_keys()
+
+# keep R only on Python common support
+r_bea_50_clean <- semi_join(
+  r_bea,
+  py_bea %>% select(year, state_fips, county_fips),
+  by = c("year", "state_fips", "county_fips")
+)
+
+# check
+cat("Python rows:", nrow(py_bea), "\n")
+cat("R original rows:", nrow(r_bea), "\n")
+cat("R cleaned rows:", nrow(r_bea_50_clean), "\n")
+
+# save cleaned R version
+write_csv(
+  r_bea_50_clean,
+  file.path(out_dir, "bea_county_panel_R.csv")
+)
 ```
 
