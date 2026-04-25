@@ -691,3 +691,7 @@ kable(county_year_stats, digits = 2, caption = "Combined County-Year Summary Sta
 kable(county_year_counts, caption = "Combined County-Year Counts by Year")
 ```
 
+```{r}
+
+```
+
