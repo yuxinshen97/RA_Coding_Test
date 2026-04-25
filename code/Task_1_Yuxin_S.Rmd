@@ -810,4 +810,23 @@ write_csv(
   file.path(out_dir, "bea_county_panel_R.csv")
 )
 ```
+```{r}
+py_cy <- read_csv(file.path(out_dir, "county_year_panel_python.csv"), show_col_types = FALSE) %>% clean_keys()
+r_cy  <- read_csv(file.path(out_dir, "county_year_panel_R.csv"), show_col_types = FALSE) %>% clean_keys()
+
+r_cy_50_clean <- semi_join(
+  r_cy,
+  py_cy %>% select(year, state_fips, county_fips),
+  by = c("year", "state_fips", "county_fips")
+)
+
+cat("Python rows:", nrow(py_cy), "\n")
+cat("R original rows:", nrow(r_cy), "\n")
+cat("R cleaned rows:", nrow(r_cy_50_clean), "\n")
+
+write_csv(
+  r_cy_50_clean,
+  file.path(out_dir, "county_year_panel_R.csv")
+)
+```
 
