@@ -32,4 +32,4 @@ RA_Coding_Test/
 │   └── soi_zip_panel_2004_2022_R.csv
 └── README.md
 
-The remaining differences in soi_zip_panel are only due to missing-value coding: R records these entries as 0, while Python records them as NaN.
+
