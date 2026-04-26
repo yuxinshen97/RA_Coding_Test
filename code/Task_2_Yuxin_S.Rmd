@@ -1645,7 +1645,11 @@ ratio_two_cases <- diff_long %>%
 
 print(ratio_two_cases, n = 100)
 
+df <- read_csv("C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/output/soi_zip_panel_2004_2022_R.csv")
 
-
+df <- df %>%
+  mutate(a00200 = ifelse(a00200 == 0 & is.na(a00300), NA, a00200))
+  
+write_csv(df, "C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/output/soi_zip_panel_2004_2022_R.csv")
 ```
 

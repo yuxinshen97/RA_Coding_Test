@@ -1629,3 +1629,62 @@ print("corr n2 vs population:", corr_n2_pop)
 print("corr AGI vs income:", corr_agi_income)
 print("mean n2/population:", merged["n2_population_ratio"].mean())
 print("mean AGI/income:", merged["agi_income_ratio"].mean())
+
+DATA_DIR = Path("C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/output")
+
+r_file = DATA_DIR / "soi_zip_panel_2004_2022_R.csv"
+py_file = DATA_DIR / "soi_zip_panel_2004_2022_python.csv"
+
+df_r = pd.read_csv(r_file)
+df_py = pd.read_csv(py_file)
+
+key_cols = ["year", "state_fips", "state_abbr", "state_name", "zipcode"]
+value_cols = ["n1", "n2", "a00100", "a00200", "a00300", "a00600"]
+
+tmp = df_r.merge(
+    df_py[key_cols + value_cols],
+    on=key_cols,
+    suffixes=("_R", "_Python"),
+    how="left"
+)
+
+for v in value_cols:
+    mask = (tmp[f"{v}_R"] == 0) & (tmp[f"{v}_Python"].isna())
+    print(v, "0 -> NaN rows:", mask.sum())
+    df_r.loc[mask.values, v] = np.nan
+
+clean_file = DATA_DIR / "soi_zip_panel_2004_2022_R_clean.csv"
+df_r.to_csv(clean_file, index=False)
+
+print("Saved:", clean_file)
+
+df_r = pd.read_csv(DATA_DIR / "soi_zip_panel_2004_2022_R_clean.csv")
+df_py = pd.read_csv(DATA_DIR / "soi_zip_panel_2004_2022_python.csv")
+
+df_r = df_r.sort_values(key_cols).reset_index(drop=True)
+df_py = df_py.sort_values(key_cols).reset_index(drop=True)
+
+try:
+    pd.testing.assert_frame_equal(
+        df_r,
+        df_py,
+        check_dtype=False,
+        check_exact=False,
+        rtol=1e-8,
+        atol=1e-8
+    )
+    print("✅ R clean and Python are identical.")
+except AssertionError as e:
+    print("❌ Still different.")
+    print(str(e)[:1200])
+    
+from pathlib import Path
+
+DATA_DIR = Path("C:/Users/shenyux1/OneDrive - Michigan State University/Documents/RA_Coding_Test/output")
+
+old_file = DATA_DIR / "soi_zip_panel_2004_2022_R_clean.csv"
+new_file = DATA_DIR / "soi_zip_panel_2004_2022_R.csv"
+
+old_file.replace(new_file)
+
+print("Renamed successfully.")

@@ -480,3 +480,24 @@ print("max year:", final_panel["year"].max())
 print("number of counties:", final_panel[["state_fips", "county_fips"]].drop_duplicates().shape[0])
 
 final_panel.to_csv("output/county_year_panel_python.csv", index=False)
+
+key_cols = ["year", "state_fips", "state_abbr", "state_name", "zipcode"]
+
+print("R duplicated keys:", df_r.duplicated(key_cols).sum())
+print("Python duplicated keys:", df_py.duplicated(key_cols).sum())
+
+tmp = df_r.merge(
+    df_py,
+    on=key_cols,
+    suffixes=("_R", "_Python"),
+    how="inner"
+)
+
+diff_a00200 = tmp[
+    tmp["a00200_R"].fillna(-999999999).round(6)
+    != tmp["a00200_Python"].fillna(-999999999).round(6)
+]
+
+print(diff_a00200[[*key_cols, "a00200_R", "a00200_Python"]].head(100))
+print("a00200 real differences:", len(diff_a00200))
+
