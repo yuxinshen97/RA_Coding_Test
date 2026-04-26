@@ -87,22 +87,21 @@ The revised combined county-year panel contains **179,025 observations** across 
 
 The number of non-missing observations is:
 
-- **112,569** for `unemployment_rate`
-- **174,148** for `income`
-- **174,148** for `population`
-- **174,148** for `income_per_capita`
+- **109,882** for `unemployment_rate`
+- **174,092** for `income`
+- **174,092** for `population`
+- **174,092** for `income_per_capita`
 
-In the earlier years from **1969 to 1989**, the panel contains fewer counties because unemployment data are not yet available from BLS. Starting in **1990**, `unemployment_rate` enters the merged panel and county coverage becomes broader.
+In the earlier years from **1969 to 1989**, the panel contains fewer counties because unemployment data are not yet available from BLS. Starting in **1990**, `unemployment_rate` enters the merged panel.
 
 ### Combined County-Year Panel Summary Statistics
 
 | Variable | Mean | Median | Standard Deviation | Min | Max | Observations |
 |---|---:|---:|---:|---:|---:|---:|
-| `unemployment_rate` | 6.03 | 5.3 | 3.15 | 0.4 | 40.6 | 112,569 |
-| `income` | 2,753,689.17 | 414,231.0 | 12,741,751.51 | 183.0 | 818,509,319.0 | 174,148 |
-| `population` | 87,176.83 | 23,434.0 | 285,627.46 | 43.0 | 10,125,014.0 | 174,148 |
-| `income_per_capita` | 23,599.89 | 19,824.0 | 17,573.64 | 1,166.0 | 532,903.0 | 174,148 |
-
+| `unemployment_rate` | 5.83 | 5.2 | 2.81 | 0.4 | 40.6 | 109,882 |
+| `income` | 2,745,999.71 | 414,021.0 | 12,731,555.11 | 183.0 | 818,509,319.0 | 174,092 |
+| `population` | 86,999.50 | 23,422.0 | 285,500.43 | 43.0 | 10,125,014.0 | 174,092 |
+| `income_per_capita` | 23,593.96 | 19,821.5 | 17,565.34 | 1,166.0 | 532,903.0 | 174,092 |
 ### Final Output Files
 
 #### R-based output files
