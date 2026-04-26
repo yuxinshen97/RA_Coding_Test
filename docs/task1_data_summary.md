@@ -107,9 +107,9 @@ In the earlier years from **1969 to 1989**, the panel contains fewer counties be
 
 #### R-based output files
 
-- `output/bea_county_panel_revised.csv`
-- `output/bls_county_panel_revised.csv`
-- `output/county_year_panel_revised.csv`
+- `output/bea_county_panel_R.csv`
+- `output/bls_county_panel_R.csv`
+- `output/county_year_panel_R.csv`
 
 #### Python replication output files
 
