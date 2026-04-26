@@ -1,29 +1,30 @@
 # Task 2 Data Summary
 
-**Author:** Yuxin Shen
-
 ## Overview
 
-Task 2 constructs revised IRS SOI county-year and ZIP-year panels using a harmonized set of variables that can be identified consistently across years. The final outputs include one county-year panel and one ZIP-year panel.
+Task 2 constructs harmonized IRS SOI county-year and ZIP-year panels. The final outputs are:
 
-A common-variable harmonization strategy was used because the raw IRS SOI files were not fully uniform across years and geographic levels. Rather than attempting to preserve all year-specific fields, I retained a core set of variables that were clearly comparable across files and could be harmonized consistently.
+- a county-year SOI panel for 1989–2022
+- a ZIP-year SOI panel for 2004–2022
 
-The main variables retained in the revised panels are:
+Both panels retain a common set of variables that can be consistently identified across years and geographic levels:
 
-- `n1` — number of returns
-- `n2` — number of exemptions / individuals
-- `a00100` — adjusted gross income
-- `a00200` — wages and salaries
-- `a00300` — interest
-- `a00600` — dividends
+- `n1`: number of returns
+- `n2`: number of exemptions / individuals
+- `a00100`: adjusted gross income
+- `a00200`: wages and salaries
+- `a00300`: taxable interest
+- `a00600`: ordinary dividends
 
-The identifier variables include year, state identifiers, and county or ZIP identifiers, depending on the panel.
+The sample is restricted to the **50 U.S. states**. Washington, D.C., state aggregate records, and non-geographic total rows are excluded. Monetary variables are reported in **thousand dollars** after harmonization.
 
 ## County-Year SOI Panel
 
-The revised county-year SOI panel is organized so that each observation represents one county in one year. The final county panel is restricted to the 50 U.S. states and excludes state total rows.
+The county-year SOI panel is organized at the county-year level. Each observation corresponds to one county in one year.
 
-The final county panel includes the following variables:
+The final county panel contains **106,759 observations** across **34 years**, from **1989 to 2022**.
+
+The final variables are:
 
 - `year`
 - `state_fips`
@@ -39,49 +40,15 @@ The final county panel includes the following variables:
 - `a00300`
 - `a00600`
 
-The revised county panel contains **106,759 observations**, covering county-level SOI records across **34 years** from **1989 to 2022**.
+### Harmonization Procedure
 
-### Data Sources Used
+The IRS county files are not fully uniform across years. Earlier files are closer to county-year files, while later files often report county-by-AGI-group records. To construct a consistent panel, I standardized state identifiers, county identifiers, year fields, and variable names before appending files across years.
 
-The county panel was constructed from IRS county income files released in multiple formats across years. These files were not always structured in the same way. Depending on the year, the raw county files appeared as:
+Beginning in 2010, several county files report multiple rows per county-year across AGI categories. These records were collapsed to the county-year level by summing `n1`, `n2`, `a00100`, `a00200`, `a00300`, and `a00600` across AGI groups. Summation is appropriate because these variables are totals, not averages.
 
-- county-year files with one observation per county-year
-- county-by-AGI-group files with multiple observations per county-year
-- spreadsheets or flat files with different layouts and naming conventions
+State total rows, non-data header rows, and non-county records were removed. Suppression codes and invalid entries were recoded as missing values rather than zeros.
 
-### Data Processing and Harmonization
-
-To build a consistent county-year panel, I reviewed the raw files year by year and identified a common set of identifiers and income variables that could be retained across periods. I then standardized variable names, state identifiers, county identifiers, and year fields before combining the files.
-
-State information was harmonized to include all of the following in the revised output:
-
-- `state_fips`
-- `state_abbr`
-- `state_name`
-
-County identifiers were standardized so that the final panel consistently includes `county_fips`, `county_name`, and `county_id`. Variable names were renamed into a common format across years to ensure comparability.
-
-### How Inconsistencies Across Years Were Handled
-
-The main challenge in constructing the county panel was that the raw IRS county files changed structure over time.
-
-For earlier years, the files were closer to a county-year format, but some still required cleaning of non-data rows, state total rows, inconsistent capitalization, special state coding, and suppressed entries. For example, the 1989 file required standardizing state identifiers using state abbreviations because some raw state FIPS entries were not consistent with standard FIPS codes.
-
-Beginning in 2010, the raw county files were often organized at the county-by-AGI-group level, so that the same county appeared multiple times within a year across different AGI categories.
-
-To make the panel consistent across years, I collapsed these records back to one observation per county-year. The collapsing was performed at the county-year level. For the core count and dollar variables (`n1`, `n2`, `a00100`, `a00200`, `a00300`, and `a00600`), I summed values across AGI groups within each county-year. I did not take averages because these variables represent totals rather than mean values. Summing across AGI groups is the appropriate way to reconstruct county-level totals when the groups are mutually exclusive components of the same county-year observation.
-
-This step was necessary to ensure that the final county panel used a consistent unit of observation across the full time span.
-
-### Treatment of Suppressed and Invalid Values
-
-Several county files contained suppression codes rather than true numeric values. These values were not treated as zeros. Instead, they were recoded as missing values (`NA`) in the revised panel.
-
-State total rows were removed so that the final file contains only county-level observations. Other non-data rows, such as title or header rows carried into spreadsheets, were also dropped during cleaning.
-
-### Data Summary
-
-For the main count and income variables, the earliest available year in the county panel is **1989** and the latest available year is **2022**.
+### County-Year Panel Coverage
 
 The number of non-missing observations is:
 
@@ -92,9 +59,9 @@ The number of non-missing observations is:
 - **53,389** for `a00300`
 - **53,389** for `a00600`
 
-The smaller number of non-missing observations for `a00300` and `a00600` reflects the more limited availability of interest and dividend variables in the source files for earlier years.
+The lower coverage for `a00300` and `a00600` reflects limited availability of interest and dividend variables in earlier source files.
 
-After revision, the county panel is consistently organized at the county-year level. A few anomalies remain worth noting. Some variables contain rare negative values, including `a00100` and values of `-1` in several variables. These appear to reflect source-file coding or adjustment entries and should be checked before downstream regression analysis.
+A few rare negative or `-1` values remain in the source-derived monetary and count variables. These likely reflect IRS source-file coding, suppression, or adjustment entries and should be checked before regression analysis.
 
 ### County SOI Panel Summary Statistics
 
@@ -109,9 +76,11 @@ After revision, the county panel is consistently organized at the county-year le
 
 ## ZIP-Year SOI Panel
 
-The revised ZIP-year SOI panel is organized so that each observation represents one ZIP code in one year.
+The ZIP-year SOI panel is organized at the ZIP-year level. Each observation corresponds to one ZIP code in one year.
 
-The final ZIP panel includes the following variables:
+The final ZIP panel contains **569,836 observations** across **19 years**, from **2004 to 2022**.
+
+The final variables are:
 
 - `year`
 - `state_fips`
@@ -125,36 +94,28 @@ The final ZIP panel includes the following variables:
 - `a00300`
 - `a00600`
 
-The final ZIP panel contains **569,836 observations**, covering **50 U.S. states** across **19 years** from **2004 to 2022**.
+### Harmonization Procedure
 
-### Data Sources Used
+The raw ZIP files are reported at the ZIP-by-AGI-group level. I collapsed them to one observation per ZIP-year by summing `n1`, `n2`, `a00100`, `a00200`, `a00300`, and `a00600` across AGI groups within each `year × state_fips × state_abbr × zipcode` cell.
 
-The ZIP panel was constructed from IRS ZIP code income files distributed in multiple formats across years. Although the ZIP files are more uniform than the county files overall, naming conventions and raw layouts were not fully consistent across all years, so harmonization was required before the yearly files could be combined into a single panel.
+Two additional adjustments were applied. First, monetary variables were harmonized to **thousand dollars**. The 2007 and 2008 raw ZIP files were reported in dollars, so those years were divided by 1,000. Second, the sample was restricted to the **50 U.S. states**. Washington, D.C. and ZIP records coded as `00000` were removed because they represent state-level aggregate records rather than actual ZIP areas.
 
-### Handling ZIP-by-AGI-Group Structure
+Duplicate checks confirm that the final ZIP panel has no repeated observations at the ZIP-year level.
 
-The raw ZIP files are organized at the **ZIP-by-AGI-group** level rather than directly at the ZIP-year level. Each ZIP code can therefore appear multiple times within a year across different AGI groups.
+### ZIP-Year Panel Coverage
 
-To construct the final ZIP-year panel, I collapsed the data to **one observation per ZIP-year**. The collapsing was performed at the `year × state_fips × state × zipcode` level. For the core count and dollar variables (`n1`, `n2`, `a00100`, `a00200`, `a00300`, and `a00600`), I summed values across AGI groups within each ZIP-year.
+All six key variables are fully observed in the retained ZIP panel:
 
+- **569,836** observations for `n1`
+- **569,836** observations for `n2`
+- **569,836** observations for `a00100`
+- **569,836** observations for `a00200`
+- **569,836** observations for `a00300`
+- **569,836** observations for `a00600`
 
-### Data Adjustments
+The number of ZIP records is higher in 2006–2007 and stabilizes at roughly 27,000–30,000 ZIP-year observations per year from 2008 onward.
 
-Two additional adjustments were applied to ensure consistency.
-
-First, the monetary variables `a00100`, `a00200`, `a00300`, and `a00600` were harmonized to a common unit of **thousand dollars**. The 2007 and 2008 raw ZIP files were reported in dollars, so those years were divided by 1,000 to make them comparable with the rest of the panel.
-
-Second, the sample was restricted to the **50 U.S. states**. Washington, D.C. was excluded, and ZIP records equal to `00000` were removed because they represent state-level aggregate records rather than actual ZIP areas.
-
-### Data Summary
-
-For all six key variables in the ZIP panel, the earliest available year is **2004** and the latest available year is **2022**. In the final ZIP panel, all six variables are fully observed across the retained records, with **569,836** non-missing observations for each of `n1`, `n2`, `a00100`, `a00200`, `a00300`, and `a00600`.
-
-The ZIP-year counts are relatively stable over time after harmonization, although the early years contain more ZIP records than later years. The panel contains roughly **38,000 observations** per year in 2006–2007 and roughly **27,000 to 30,000 observations** per year from 2008 onward. The number of distinct ZIP units per year follows a similar pattern.
-
-Compared with the county panel, the revised ZIP panel does not show the same post-2010 aggregation inconsistency and appears to be consistently organized at the ZIP-year level after harmonization. Duplicate checks indicated no repeated observations at the ZIP-year level in the final output.
-
-The main notable pattern in the ZIP panel is that `a00100` includes some negative values, which is acceptable given the variable definition. Otherwise, the key variables are nonnegative in the final output, and no major anomalies remain after standardizing identifiers, harmonizing variable names, rescaling monetary units, and aggregating ZIP-by-AGI-group records into ZIP-year observations.
+The main remaining feature is that `a00100` includes some negative values, which is consistent with adjusted gross income definitions. Other key variables are nonnegative after harmonization.
 
 ### ZIP SOI Panel Summary Statistics
 
@@ -167,7 +128,7 @@ The main notable pattern in the ZIP panel is that `a00100` includes some negativ
 | `a00300` | 765,904.35 | 907.00 | 6,926,703.64 | 0 | 1,287,790,267 | 569,836 |
 | `a00600` | 700,767.53 | 1,119.00 | 7,692,406.53 | 0 | 1,082,440,596 | 569,836 |
 
-**Note:** Monetary variables are measured in thousand dollars. The sample is a ZIP-year panel covering the 50 U.S. states from 2004 to 2022. Washington, D.C. and state aggregate ZIP records coded as `00000` are excluded.
+**Note:** Monetary variables are measured in thousand dollars. The sample covers the 50 U.S. states only. Washington, D.C. and aggregate ZIP records coded as `00000` are excluded.
 
 ## Final Output Files
 
@@ -175,13 +136,13 @@ The main notable pattern in the ZIP panel is that `a00100` includes some negativ
 - `output/soi_county_panel_1989_2022_python.csv`
 - `output/soi_zip_panel_2004_2022_R.csv`
 - `output/soi_zip_panel_2004_2022_python.csv`
-``
-## Data Comparison with Other Sources
 
-I compare the SOI county panel with a BEA-based county-year panel using matched observations by `year`, `state_fips`, and `county_fips`. The comparison focuses on SOI `n2` versus BEA `population`, and SOI `a00100` versus BEA `income`.
+## Validation Against BEA Data
 
-The two sources show a strong cross-sectional relationship. The correlation between SOI `n2` and BEA `population` is **0.9956**, and the correlation between SOI `a00100` and BEA `income` is **0.9923**. On average, `n2 / population` is about **0.864**, and `a00100 / income` is about **0.580**.
+I validate the SOI county panel against a BEA county-year panel matched by `year`, `state_fips`, and `county_fips`. The comparison focuses on SOI `n2` versus BEA `population`, and SOI `a00100` versus BEA `income`.
 
-The level differences reflect definition differences: SOI `n2` is based on tax filers rather than the full resident population, and SOI `a00100` (adjusted gross income) is narrower than BEA income.
+The two sources are highly correlated in cross-county variation. The correlation between SOI `n2` and BEA `population` is **0.9956**. The correlation between SOI `a00100` and BEA `income` is **0.9923**.
 
-These results indicate that while the levels differ, the two datasets are highly consistent in cross-county variation.
+The level ratios are below one, as expected. On average, `n2 / population` is **0.864**, and `a00100 / income` is **0.580**. These gaps reflect definitional differences: SOI `n2` is based on tax-filing units and exemptions rather than the full resident population, while SOI adjusted gross income is narrower than BEA income.
+
+Overall, the validation indicates that the SOI panels capture county-level cross-sectional variation very closely, despite expected level differences across data sources.
